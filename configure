@@ -1,0 +1,21 @@
+#! /bin/bash
+#
+# Configure INN
+#
+set -e
+. ./config
+for diff; do
+    echo "Applying $diff ..."
+    echo
+    really sh -c "cd $PREFIX/etc && patch -p5" < $diff
+    echo
+done
+echo
+echo ================================
+echo
+really su - tnews -c 'bin/rc.news'
+sleep 3                         # let it settle
+echo
+echo ================================
+echo
+ctlinnd flush ""                # kick main innfeed

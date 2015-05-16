@@ -1,0 +1,19 @@
+#! /bin/bash
+#
+# Install a clean INN
+#
+set -e
+. config
+cd $DIR
+if [ -e $PREFIX/etc/inn.conf ]; then
+    really su - tnews -c 'bin/ctlinnd shutdown make-test-inn' || true
+    sleep 3                         # just in case...
+    echo
+    echo ================================
+    echo
+fi
+really rm -rf $PREFIX/etc/*
+really make -C $DIR install
+echo
+echo ================================
+echo

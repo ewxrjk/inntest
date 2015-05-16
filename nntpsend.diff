@@ -1,0 +1,20 @@
+diff -ru site/newsfeeds /usr/local/news/etc/newsfeeds
+--- site/newsfeeds	2015-05-16 14:12:54.052295952 +0100
++++ /usr/local/news/etc/newsfeeds	2015-05-16 14:12:19.020249458 +0100
+@@ -143,3 +143,7 @@
+ #capture!\
+ #	:*/foo\
+ #	:Tp,H2:/usr/local/bin/capture %s
++
++deodand.anjou.terraraq.org.uk\
++        :greenend.*/!local\
++        :Tf,Wnm:
+diff -ru site/nntpsend.conf /usr/local/news/etc/nntpsend.conf
+--- site/nntpsend.ctl	2015-05-04 15:02:27.608239698 +0100
++++ /usr/local/news/etc/nntpsend.ctl	2015-05-16 14:08:46.395967307 +0100
+@@ -19,3 +19,5 @@
+ #group70:group70.org::
+ #walldrug:walldrug.com:4m-1m:-T1800 -t300
+ #kremvax:kremvax.cis:2m:
++
++deodand.anjou.terraraq.org.uk:deodand.anjou.terraraq.org.uk::

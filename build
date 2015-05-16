@@ -1,0 +1,25 @@
+#! /bin/bash
+#
+# Build a clean INN
+#
+set -e
+. ./config
+cd $DIR
+./autogen
+./configure --prefix=$PREFIX --with-perl --with-python --with-openssl \
+            --with-sasl --with-news-user=tnews --with-news-group=tnews \
+            --enable-largefiles --with-innd-port=1119 --with-bdb --with-zlib
+cd -
+make -C $DIR bootstrap
+make -C $DIR clean
+echo
+echo ================================
+echo
+make -C $DIR -j4
+echo
+echo ================================
+echo
+make -C $DIR check
+echo
+echo ================================
+echo

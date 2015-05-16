@@ -1,0 +1,82 @@
+diff -ru site/incoming.conf /usr/local/news/etc/incoming.conf
+--- site/incoming.conf	2015-05-04 20:37:41.313424816 +0100
++++ /usr/local/news/etc/incoming.conf	2015-05-04 15:10:58.051878093 +0100
+@@ -156,3 +156,7 @@
+ peer ME {
+   hostname:         "localhost, 127.0.0.1, ::1"
+ }
++
++peer deodand.anjou.terraraq.org.uk {
++     hostname: deodand.anjou.terraraq.org.uk
++}
+diff -ru site/inn.conf /usr/local/news/etc/inn.conf
+--- site/inn.conf	2015-05-04 20:37:41.393424837 +0100
++++ /usr/local/news/etc/inn.conf	2015-05-04 20:15:22.414295431 +0100
+@@ -21,7 +21,7 @@
+ organization:                "A poorly-installed InterNetNews site"
+ ovmethod:                    tradindexed
+ hismethod:                   hisv6
+-pathhost:                    deodand
++pathhost:                    test.anjou.terraraq.org.uk
+ pathnews:                    /usr/local/news
+ 
+ #runasuser:
+@@ -32,7 +32,7 @@
+ #domain:
+ #innflags:
+ mailcmd:                     /usr/local/news/bin/innmail
+-#server:
++server:			     deodand.anjou.terraraq.org.uk
+ 
+ # Feed Configuration
+ 
+@@ -49,7 +49,7 @@
+ #pathalias:
+ #pathcluster:
+ pgpverify:                   true
+-port:                        119
++port:                        1119
+ refusecybercancels:          false
+ remembertrash:               true
+ #sourceaddress:
+@@ -80,8 +80,8 @@
+ 
+ allownewnews:                true
+ articlemmap:                 true
+-clienttimeout:               1800
+-initialtimeout:              10
++clienttimeout:               86400
++initialtimeout:              3600
+ msgidcachesize:              16000
+ nfsreader:                   false
+ nfsreaderdelay:              60
+@@ -111,6 +111,7 @@
+ addinjectionpostinghost:     true
+ checkincludedtext:           false
+ #complaints:
++complaints:			rjk@greenend.org.uk
+ #fromhost:
+ localmaxartsize:             1000000
+ #moderatormailer:
+diff -ru site/readers.conf /usr/local/news/etc/readers.conf
+--- site/readers.conf	2015-05-04 20:37:42.353425081 +0100
++++ /usr/local/news/etc/readers.conf	2015-05-04 15:12:57.987737445 +0100
+@@ -59,12 +59,17 @@
+     default: "<localhost>"
+ }
+ 
++auth "lan" {
++    hosts: 172.17.207.0/24
++    default: "<lan>"
++}
++
+ # Grant that specific identity access to read and post to any newsgroup
+ # and allow it to post articles with Approved: headers to moderated
+ # groups.
+ 
+ access "localhost" {
+-    users: "<localhost>"
++    users: "<localhost>,<lan>"
+     newsgroups: "*"
+     access: RPA
+ }

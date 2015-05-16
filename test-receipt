@@ -1,0 +1,32 @@
+#! /bin/sh
+#
+# Test article receipt
+#
+set -e
+. ./config
+
+echo ==== $0
+
+echo Injection article remotely
+REMOTE_CODE=$(dd if=/dev/urandom count=1 bs=24 status=none | base64)
+inews -h <<EOF
+Newsgroups: greenend.test
+Subject: [do-test-inn] peer injection
+
+$REMOTE_CODE
+EOF
+
+echo Checking article present in remote spool
+if ! grep -Fq $REMOTE_CODE /var/spool/news/articles/greenend/test/*; then
+    echo Peer injection failed
+    exit 1
+fi
+
+sleep 1
+echo Checking article present in spool
+if ! grep -Fq $REMOTE_CODE $PREFIX/spool/articles/greenend/test/*; then
+    echo Inbound peering failed
+    exit 1
+fi
+
+echo OK

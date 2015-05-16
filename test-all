@@ -1,0 +1,20 @@
+#! /bin/bash
+set -e
+. /config
+set -x
+
+./build
+
+echo ==== Main test run
+
+./install
+./configure core.diff innfeed.diff
+./test-injection innfeed
+./test-receipt
+
+echo ==== nntpsend tests
+
+./install
+./configure core.diff nntpsend.diff
+./test-injection nntpsend
+./test-receipt

@@ -5,7 +5,7 @@
 set -e
 . ./config
 
-echo ==== $0
+echo === $0 ===
 
 echo Injecting article
 LOCAL_CODE=$(dd if=/dev/urandom count=1 bs=24 status=none | base64)
@@ -18,7 +18,7 @@ EOF
 
 echo Checking article present in spool
 if ! grep -Fq $LOCAL_CODE $PREFIX/spool/articles/greenend/test/*; then
-    echo Local injection failed
+    echo "Local injection failed ($LOCAL_CODE)"
     exit 1
 fi
 
@@ -36,7 +36,7 @@ esac
 
 echo Checking article present in remote spool
 if ! grep -Fq $LOCAL_CODE /var/spool/news/articles/greenend/test/*; then
-    echo Outbound peering failed
+    echo "Outbound peering failed ($LOCAL_CODE)"
     exit 1
 fi
 

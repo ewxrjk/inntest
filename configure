@@ -1,21 +1,20 @@
 #! /bin/bash
 #
-# Configure INN
+# Configure and start INN
+#
+# Usage:
+#   configure [PATCH ...]
+#
+# Applies the listed patches to INN's configuration and then starts
+# it.
 #
 set -e
 . ./config
 for diff; do
     echo "Applying $diff ..."
-    echo
     really sh -c "cd $PREFIX/etc && patch -p5" < $diff
-    echo
 done
-echo
-echo ================================
-echo
-really su - tnews -c 'bin/rc.news'
+echo start ...
+really su - tnews -c 'bin/rc.news' > start.log 2>&1
 sleep 3                         # let it settle
-echo
-echo ================================
-echo
-ctlinnd flush ""                # kick main innfeed
+ctlinnd -s flush ""             # kick main innfeed

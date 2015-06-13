@@ -1,0 +1,13 @@
+INN Test Utilities
+==================
+
+This is a test system for INN.  It's not very complete yet.
+
+1. Create 'tnews' user and group.
+
+2. Edit the diffs to reflect your local configuration.  You'll need a
+   known-good news swerver on the same box to peer with.
+
+3. Edit 'config' to meet your local settings.
+
+4. Run 'test-all' to build and test INN.

@@ -6,14 +6,10 @@ set -e
 . config
 cd $DIR
 if [ -e $PREFIX/etc/inn.conf ]; then
+    echo shutdown ...
     really su - tnews -c 'bin/ctlinnd shutdown make-test-inn' || true
     sleep 3                         # just in case...
-    echo
-    echo ================================
-    echo
 fi
 really rm -rf $PREFIX/etc/*
-really make -C $DIR install
-echo
-echo ================================
-echo
+echo install ...
+really make -C $DIR install > install.log 2>&1

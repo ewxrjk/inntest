@@ -5,21 +5,19 @@
 set -e
 . ./config
 cd $DIR
+echo autogen ...
 ./autogen
+echo configure ...
 ./configure --prefix=$PREFIX --with-perl --with-python --with-openssl \
             --with-sasl --with-news-user=tnews --with-news-group=tnews \
-            --enable-largefiles --with-innd-port=1119 --with-bdb --with-zlib
+            --enable-largefiles --with-innd-port=1119 --with-bdb --with-zlib \
+            > configure.log 2>&1
 cd -
-make -C $DIR bootstrap
-make -C $DIR clean
-echo
-echo ================================
-echo
-make -C $DIR -j4
-echo
-echo ================================
-echo
-make -C $DIR check
-echo
-echo ================================
-echo
+echo make bootstrap ...
+make -C $DIR bootstrap > bootstrap.log 2>&1
+echo make clean ...
+make -C $DIR clean > clean.log 2>&1
+echo make ...
+make -C $DIR -j4 > build.log 2>&1
+echo make check ...
+make -C $DIR check > check.log 2>&1

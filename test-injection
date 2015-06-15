@@ -7,9 +7,9 @@ set -e
 
 echo === $0 ===
 
-echo Injecting article
+echo Injecting article locally
 LOCAL_CODE=$(dd if=/dev/urandom count=1 bs=24 status=none | base64)
-really su - tnews -c "$PREFIX/bin/inews -h -p 1119" <<EOF
+${REALLY} su - tnews -c "$PREFIX/bin/inews -h -p 1119" <<EOF
 Newsgroups: greenend.test
 Subject: [do-test-inn] local injection
 
@@ -24,16 +24,13 @@ fi
 
 case "$1" in
     nntpsend )
-        really su - tnews -c "$PREFIX/bin/ctlinnd -s flush ''"
-        sleep 1
-        really su - tnews -c "$PREFIX/bin/nntpsend"
-        sleep 1
-        ;;
-    * )
-        sleep 1
+        ${REALLY} su - tnews -c "$PREFIX/bin/ctlinnd -s flush ''"
+        sleep 2
+        ${REALLY} su - tnews -c "$PREFIX/bin/nntpsend"
         ;;
 esac
 
+sleep 2
 echo Checking article present in remote spool
 if ! grep -Fq $LOCAL_CODE /var/spool/news/articles/greenend/test/*; then
     echo "Outbound peering failed ($LOCAL_CODE)"

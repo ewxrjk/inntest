@@ -7,7 +7,7 @@ set -e
 
 echo === $0 ===
 
-echo Injection article remotely
+echo Injecting article remotely
 REMOTE_CODE=$(dd if=/dev/urandom count=1 bs=24 status=none | base64)
 inews -h <<EOF
 Newsgroups: greenend.test
@@ -22,7 +22,7 @@ if ! grep -Fq $REMOTE_CODE /var/spool/news/articles/greenend/test/*; then
     exit 1
 fi
 
-sleep 1
+sleep 2
 echo Checking article present in spool
 if ! grep -Fq $REMOTE_CODE $PREFIX/spool/articles/greenend/test/*; then
     echo "Inbound peering failed ($REMOTE_CODE)"

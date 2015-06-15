@@ -1,2 +1,3 @@
 PREFIX=/usr/local/news
 DIR=../inn-build
+REALLY=really

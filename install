@@ -4,12 +4,22 @@
 #
 set -e
 . config
+SELF=$(pwd)
 cd $DIR
 if [ -e $PREFIX/etc/inn.conf ]; then
     echo shutdown ...
-    really su - tnews -c 'bin/ctlinnd shutdown make-test-inn' || true
+    ${REALLY} su - tnews -c 'bin/ctlinnd shutdown make-test-inn' || true
     sleep 3                         # just in case...
 fi
-really rm -rf $PREFIX/etc/*
+${REALLY} rm -rf $PREFIX/etc/*
+${REALLY} rm -rf $PREFIX/bin/*.real
 echo install ...
-really make -C $DIR install > install.log 2>&1
+${REALLY} make -C $DIR install > install.log 2>&1
+if ${VALGRIND:-false}; then
+    ${REALLY} $SELF/valgrindize --log $PREFIX/log $PREFIX/bin/innd
+    ${REALLY} $SELF/valgrindize --log $PREFIX/log $PREFIX/bin/innfeed
+    ${REALLY} $SELF/valgrindize --log $PREFIX/log $PREFIX/bin/nnrpd
+    ${REALLY} $SELF/valgrindize --log $PREFIX/log $PREFIX/bin/innxmit
+    ${REALLY} $SELF/valgrindize --log $PREFIX/log $PREFIX/bin/inews
+    ${REALLY} $SELF/valgrindize --log $PREFIX/log $PREFIX/bin/ctlinnd
+fi

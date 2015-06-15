@@ -12,9 +12,9 @@ set -e
 . ./config
 for diff; do
     echo "Applying $diff ..."
-    really sh -c "cd $PREFIX/etc && patch -p5" < $diff
+    ${REALLY} sh -c "cd $PREFIX/etc && patch -p5" < $diff
 done
 echo start ...
-really su - tnews -c 'bin/rc.news' > start.log 2>&1
+${REALLY} su - tnews -c 'bin/rc.news' > start.log 2>&1
 sleep 3                         # let it settle
 ctlinnd -s flush ""             # kick main innfeed

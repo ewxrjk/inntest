@@ -1,0 +1,14 @@
+#! /bin/bash
+set -e
+. ./config
+
+echo
+echo ==== nntpsend/buffindexed tests ====
+echo
+
+./install
+${REALLY} su - tnews -c 'dd if=/dev/zero of=/usr/local/news/spool/overview/OV1 bs=1024 count=1536000'
+${REALLY} su - tnews -c 'dd if=/dev/zero of=/usr/local/news/spool/overview/OV2 bs=1024 count=1536000'
+./configure core.diff nntpsend.diff buffindexed.diff
+./test-injection nntpsend
+./test-receipt

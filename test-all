@@ -4,20 +4,5 @@ set -e
 
 ./build
 
-echo
-echo ==== Main test run ====
-echo
-
-./install
-./configure core.diff innfeed.diff
-./test-injection innfeed
-./test-receipt
-
-echo
-echo ==== nntpsend tests ====
-echo
-
-./install
-./configure core.diff nntpsend.diff
-./test-injection nntpsend
-./test-receipt
+./test-main
+./test-nntpsend

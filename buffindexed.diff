@@ -1,0 +1,12 @@
+diff -ru site/inn.conf /usr/local/news/etc/inn.conf
+--- site/inn.conf	2015-06-20 10:00:01.534714008 +0100
++++ /usr/local/news/etc/inn.conf	2015-06-20 10:00:06.290711908 +0100
+@@ -19,7 +19,7 @@
+ 
+ mta:                         "/usr/sbin/sendmail -oi -oem %s"
+ organization:                "A poorly-installed InterNetNews site"
+-ovmethod:                    tradindexed
++ovmethod:                    buffindexed
+ hismethod:                   hisv6
+ pathhost:                    test.anjou.terraraq.org.uk
+ pathnews:                    /usr/local/news

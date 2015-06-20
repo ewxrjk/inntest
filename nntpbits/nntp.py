@@ -1,5 +1,7 @@
 import nntpbits.protocols
-import socket
+import re,socket
+
+_group_re=re.compile(b"^([0-9]+) ([0-9]+) ([0-9]+) (.*)$")
 
 class client(nntpbits.protocols.Protocol):
     """NNTP client endpoint
@@ -19,6 +21,7 @@ class client(nntpbits.protocols.Protocol):
         self.posting=None
         self.reader=None
         self.capability_list=None
+        self.current_group=None
 
     def connect(self, address, timeout=None, source_address=None):
         """n.connect(address[, timeout[, source_address]])
@@ -124,6 +127,85 @@ class client(nntpbits.protocols.Protocol):
         code,arg=self.wait()
         if code!=240:
             raise Exception("POST command failed: %s" % self.response)
+
+    def group(self, group):
+        """n.group(NAME) -> (count, low, high)
+
+        Selects the group NAME.
+
+        """
+        self._require_reader()
+        if isinstance(group, str):
+            group=bytes(group,"ascii")
+        code,arg=self.transact(b"GROUP " + group)
+        if code == 211:
+            m=_group_re.match(arg)
+            if not m:
+                raise Exception("GROUP response malformed: %s" % self.response)
+            return (int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        elif code == 411:
+            raise Exception("Group %s does not exist" % str(group))
+        else:
+            raise Exception("GROUP command failed: %s" % self.response)
+
+    def article(self, ident):
+        """n.article(NUMBER) -> [LINE] | None
+        n.article(ID) -> [LINE] | None
+
+        Retrieves an article by number from the current group, or by
+        message ID specified as a bytes object (or as a string, which
+        will be converted to a bytes object using the ASCII encoding).
+
+        The return value is either a list of lines (as bytes objects,
+        without any line endings) or None if the article does not exist.
+
+        """
+        return self._article(ident, b'ARTICLE', 220)
+
+    def head(self, ident):
+        """n.head(NUMBER) -> [LINE] | None
+        n.head(ID) -> [LINE] | None
+
+        Retrieves the header of an article by number from the current
+        group, or by message ID specified as a bytes object (or as a
+        string, which will be converted to a bytes object using the
+        ASCII encoding).
+
+        The return value is either a list of lines (as bytes objects,
+        without any line endings) or None if the article does not exist.
+
+        """
+        return self._article(ident, b'HEAD', 221)
+
+    def body(self, ident):
+        """n.body(NUMBER) -> [LINE] | None
+        n.body(ID) -> [LINE] | None
+
+        Retrieves the body of an article by number from the current
+        group, or by message ID specified as a bytes object (or as a
+        string, which will be converted to a bytes object using the
+        ASCII encoding).
+
+        The return value is either a list of lines (as bytes objects,
+        without any line endings) or None if the article does not exist.
+
+        """
+        return self._article(ident, b'BODY', 222)
+
+    def _article(self, ident, command, response):
+        self._require_reader()
+        if isinstance(ident, int):
+            ident="%d" % ident
+        if isinstance(ident, str):
+            ident=bytes(ident,'ascii')
+        code,arg=self.transact(command + b' ' + ident)
+        if code == response:
+            return self.receive_lines()
+        elif code == 423 or code == 430:
+            return None
+        else:
+            raise Exception("%s command failed: %s"
+                            % (str(command), self.response))
 
     def quit(self):
         """n.quit()

@@ -142,6 +142,7 @@ class client(nntpbits.protocols.Protocol):
             m=_group_re.match(arg)
             if not m:
                 raise Exception("GROUP response malformed: %s" % self.response)
+            self.current_group=group
             return (int(m.group(1)), int(m.group(2)), int(m.group(3)))
         elif code == 411:
             raise Exception("Group %s does not exist" % str(group))

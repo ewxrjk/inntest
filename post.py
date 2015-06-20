@@ -8,17 +8,22 @@ def main(argv):
                    default='news')
     p.add_argument('-p', '--port', help='Server port',
                    type=int, default=119)
+    p.add_argument('-i', '--ihave', help='Use IHAVE',
+                   action='store_true')
     p.add_argument('-d', '--debug', help='Enable debugging',
                    action='store_const', const='DEBUG', default='INFO')
     r=p.parse_args(argv)
     logging.basicConfig(level=r.debug)
     article=sys.stdin.buffer.read()
-    post(r.server, r.port, article)
+    post(r.server, r.port, article, r.ihave)
 
-def post(server, port, article):
+def post(server, port, article, ihave):
     client=nntpbits.nntp.client()
     client.connect((server, port))
-    client.post(article)
+    if ihave:
+        client.ihave(article)
+    else:
+        client.post(article)
     client.quit()
 
 if __name__ == '__main__':

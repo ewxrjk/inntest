@@ -2,6 +2,7 @@ import nntpbits.protocols
 import re,socket
 
 _group_re=re.compile(b"^([0-9]+) ([0-9]+) ([0-9]+) (.*)$")
+_message_id_re=re.compile(b"Message-ID:\\s*(<.*@.*>)\\s*$", re.IGNORECASE)
 
 class client(nntpbits.protocols.Protocol):
     """NNTP client endpoint
@@ -114,19 +115,72 @@ class client(nntpbits.protocols.Protocol):
         using the ASCII encoding.  The same applies to list elements
         if it is a list.
 
+        This is the correct method for normal clients to use to post
+        new articles.
+
         """
         self._require_reader()
+        self._post(article, b'POST', None, 340, 240)
+
+    def ihave(self, article, ident=None):
+        """n.ihave(ARTICLE[, IDENT])
+
+        Transfer an article.
+
+        ARTICLE may either be a bytes object (in which case it will be
+        split at CRLF or LF characters) or a list of bytes objects,
+        one per line.  In the latter case, each list element must not
+        include newline sequences.
+
+        If ARTICLE is a string, then it is converted to a bytes object
+        using the ASCII encoding.  The same applies to list elements
+        if it is a list.
+
+        IDENT should be the articles message ID, either as a bytes
+        object or a string.  If it is missing then it will be
+        extracted from the article.
+
+        This method is only suitable for use by news peers.  To post a
+        new article from a normal client, use the post() method
+        instead.
+
+        """
+        if isinstance(ident, str):
+            article=bytes(ident,'ascii')
+        if ident is None:
+            if isinstance(article, bytes):
+                article=article.splitlines()
+            for line in article:
+                if line == "":
+                    break
+                m=_message_id_re.match(line)
+                if m:
+                    ident=m.group(1)
+                    break
+        if ident is None:
+            raise Exception("failed to extract message ID from article")
+        return self._post(article, b'IHAVE', ident, 335, 235)
+
+    def _post(self, article, command, ident, initial_response, ok_response):
         if isinstance(article, str):
             article=bytes(article,'ascii')
         if isinstance(article, bytes):
             article=article.splitlines()
-        code,arg=self.transact(b"POST")
-        if code!=340:
-            raise Exception("POST not permitted: %s" % self.response)
+        code,arg=self.transact(command if ident is None
+                               else command + b' ' + ident)
+        if code == 435 or code == 436:
+            return code
+        if code!=initial_response:
+            raise Exception("%s command failed: %s"
+                            % (str(command), self.response))
         self.send_lines(article)
         code,arg=self.wait()
-        if code!=240:
-            raise Exception("POST command failed: %s" % self.response)
+        if code == 436 or code == 437:
+            return code
+        if code!=ok_response:
+            raise Exception("%s command failed: %s"
+                            % (str(command), self.response))
+        return code
 
     def group(self, group):
         """n.group(NAME) -> (count, low, high)

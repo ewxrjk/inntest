@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 import argparse,logging,os,sys
-import nntpbits.nntp
+import nntpbits
 
 def main(argv):
     p=argparse.ArgumentParser()
@@ -16,7 +16,7 @@ def main(argv):
     dump_group(r.server, r.port, r.GROUP)
 
 def dump_group(server, port, group):
-    client=nntpbits.nntp.client()
+    client=nntpbits.Client()
     client.connect((server, port))
     (count, low, high)=client.group(group)
     linesep=bytes(os.linesep, 'ascii')

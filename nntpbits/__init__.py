@@ -1,3 +1,3 @@
 """NNTP support utilities"""
-from nntpbits.protocols import *
-import nntpbits.nntp
+from nntpbits.Protocol import *
+from nntpbits.Client import *

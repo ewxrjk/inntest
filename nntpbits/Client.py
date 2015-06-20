@@ -1,20 +1,20 @@
-import nntpbits.protocols
+import nntpbits
 import re,socket
 
 _group_re=re.compile(b"^([0-9]+) ([0-9]+) ([0-9]+) (.*)$")
 _message_id_re=re.compile(b"Message-ID:\\s*(<.*@.*>)\\s*$", re.IGNORECASE)
 
-class client(nntpbits.protocols.Protocol):
+class Client(nntpbits.Protocol):
     """NNTP client endpoint
 
     Construction:
-    nntpbits.nntp.client() -> NNTP client object
+    nntpbits.Client() -> NNTP client object
 
     Call the connect() method to actually establish a connection.
 
     """
     def __init__(self):
-        nntpbits.protocols.Protocol.__init__(self)
+        nntpbits.Protocol.__init__(self)
         self._reset()
 
     def _reset(self):

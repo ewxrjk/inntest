@@ -7,8 +7,8 @@ class Protocol(object):
     """Base class for text-based network protocols
 
     Construction:
-    Protocol() -> protocol endpoint object
-    Protocol(eol=EOL) -> protocol endpoint object
+    nntpbits.Protocol() -> protocol endpoint object
+    nntpbits.Protocol(eol=EOL) -> protocol endpoint object
 
     EOL must be a byte string.  The default is CRLF.
 

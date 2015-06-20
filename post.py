@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 import argparse,logging,sys
-import nntpbits.nntp
+import nntpbits
 
 def main(argv):
     p=argparse.ArgumentParser()
@@ -18,7 +18,7 @@ def main(argv):
     post(r.server, r.port, article, r.ihave)
 
 def post(server, port, article, ihave):
-    client=nntpbits.nntp.client()
+    client=nntpbits.Client()
     client.connect((server, port))
     if ihave:
         client.ihave(article)

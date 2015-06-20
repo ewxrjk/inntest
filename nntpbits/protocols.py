@@ -47,11 +47,15 @@ class Protocol(object):
     def send_line(self, line):
         """p.send_line(BYTES)
 
-        Send a string of bytes.  The protocol EOL sequence is
-        appended.
+        Send a bytes object.  The protocol EOL sequence is appended.
+
+        If BYTES is actually a string then it is converted to a bytes
+        object using the ASCII encoding.
 
         """
         logging.debug("SEND %s" % line)
+        if isinstance(line, str):
+            line=bytes(line,'ascii')
         self.w.write(line)
         self.w.write(b'\r\n')
         self.w.flush()
@@ -59,12 +63,17 @@ class Protocol(object):
     def send_lines(self, lines):
         """p.send_lines(LIST)
 
-        Send a list of byte strings.  The SMTP/NNTP dot-stuffing
+        Send a list of bytes objects.  The SMTP/NNTP dot-stuffing
         protocol is used.  The protocol EOL sequence is appended to
         each line.
 
+        If any of the list elements are strings then it they are
+        converted to bytes objects using the ASCII encoding.
+
         """
         for line in lines:
+            if isinstance(line, str):
+                line=bytes(line,'ascii')
             if len(line) > 0 and line[0] == b'.':
                 self.w.write(b'.')
             self.w.write(line)
@@ -75,8 +84,8 @@ class Protocol(object):
     def receive_line(self):
         """p.receive_line() -> LINE
 
-        Receive a line as a byte string.  The protocol EOL sequence is
-        removed.
+        Receive a line as a bytes object.  The protocol EOL sequence
+        is removed.
 
         """
         line=b"";
@@ -94,15 +103,15 @@ class Protocol(object):
     def receive_lines(self):
         """p.receive_lines() -> LIST
 
-        Receive a sequence of lines as a list.  The SMTP/NNTP
-        dot-stuffing protocol is used.  The protocol EOL sequence is
-        removed from each line.
+        Receive a sequence of lines as a list of bytes objects.  The
+        SMTP/NNTP dot-stuffing protocol is used.  The protocol EOL
+        sequence is removed from each line.
 
         """
         lines=[]
         line=self.receive_line()
         while line != b".":
-            if line[0] == b'.':
+            if len(line) > 0 and line[0] == b'.':
                 line=line[1:]
             lines.append(line)
             line=self.receive_line()
@@ -123,7 +132,7 @@ class Protocol(object):
         """p.parse(LINE) -> CODE,ARGUMENT
 
         Break a SMTP/NNTP style line into the response code and
-        argument.  CODE is an int, ARGUMENT a byte string.
+        argument.  CODE is an int, ARGUMENT a bytes object.
 
         """
         m=_parse_re.match(line)
@@ -144,7 +153,7 @@ class Protocol(object):
     def transact(self, cmd):
         """p.transact(LINE) -> CODE, ARGUMENT
 
-        Send a string of bytes, appending the protocol EOL sequence.
+        Send a bytes object, appending the protocol EOL sequence.
         Then wait for a response and break it into a response code and
         argument using the same rules as self.nntpbits.Protocol.parse.
 

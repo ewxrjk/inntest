@@ -102,13 +102,19 @@ class client(nntpbits.protocols.Protocol):
 
         Post an article.
 
-        ARTICLE may either be a byte string (in which case it will be
-        split at CRLF or LF characters) or a list of byte strings, one
-        per line.  In the latter case, the byte strings must not
+        ARTICLE may either be a bytes object (in which case it will be
+        split at CRLF or LF characters) or a list of bytes objects,
+        one per line.  In the latter case, each list element must not
         include newline sequences.
+
+        If ARTICLE is a string, then it is converted to a bytes object
+        using the ASCII encoding.  The same applies to list elements
+        if it is a list.
 
         """
         self._require_reader()
+        if isinstance(article, str):
+            article=bytes(article,'ascii')
         if isinstance(article, bytes):
             article=article.splitlines()
         code,arg=self.transact(b"POST")

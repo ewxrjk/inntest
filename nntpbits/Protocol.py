@@ -34,6 +34,7 @@ class Protocol(object):
 
         """
         self.files(r=s.makefile(mode='rb'), w=s.makefile(mode='wb'))
+        s.close()
 
     def connected(self):
         """p.connected()
@@ -87,10 +88,14 @@ class Protocol(object):
         Receive a line as a bytes object.  The protocol EOL sequence
         is removed.
 
+        Returns None if there is no more input.
+
         """
         line=b"";
         while not self._complete(line):
-            (ch)=self.r.read(1)
+            ch=self.r.read(1)
+            if len(ch) == 0:
+                return None
             line += ch
         line=line[0:-len(self.eol)]
         ## TODO eof behavior
@@ -107,10 +112,14 @@ class Protocol(object):
         SMTP/NNTP dot-stuffing protocol is used.  The protocol EOL
         sequence is removed from each line.
 
+        Returns None if there is no more input.
+
         """
         lines=[]
         line=self.receive_line()
         while line != b".":
+            if line is None:
+                return None
             if len(line) > 0 and line[0] == b'.':
                 line=line[1:]
             lines.append(line)
@@ -123,8 +132,10 @@ class Protocol(object):
         Disconnect from the peer.
 
         """
-        self.r.close()
-        self.w.close()
+        if self.r is not None:
+            self.r.close()
+        if self.w is not None:
+            self.w.close()
         self.r=None
         self.w=None
 

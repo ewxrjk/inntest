@@ -94,7 +94,7 @@ class client(nntpbits.protocols.Protocol):
             self.reader=True
             self.posting=False
         else:
-            raise Exception("MODE READER failed %s" % self.response)
+            raise Exception("MODE READER command failed %s" % self.response)
         self.capability_list = None
 
     def post(self, article):
@@ -123,7 +123,7 @@ class client(nntpbits.protocols.Protocol):
         self.send_lines(article)
         code,arg=self.wait()
         if code!=240:
-            raise Exception("POST failed: %s" % self.response)
+            raise Exception("POST command failed: %s" % self.response)
 
     def quit(self):
         """n.quit()

@@ -23,7 +23,10 @@ class Server(nntpbits.Protocol):
         self._reset()
         self.commands={
             b'QUIT': self.quit,
+            b'CAPABILITIES': self.capabilities,
         }
+        self.capabilities=[b"VERSION 2",
+                           b"IMPLEMENTATION inntest"]
 
     def _reset(self):
         self.finished=False
@@ -45,6 +48,22 @@ class Server(nntpbits.Protocol):
             r = self.receive_line()
         self.disconnect()
 
+    def register(self, command, callback):
+        """s.register(COMMAND, CALLBACK)
+
+        When COMMAND is received, CALLBACK(ARGUMENTS) will be called.
+        It must carry out the complete implementation of the command,
+        i.e. checking argument syntax and issuing any response.
+
+        This method can be used either to add new commands or to
+        over-ride existing ones.  (The latter could also be done by
+        overriding them as subclass methods.)
+
+        """
+        if isinstance(command, str):
+            command=bytes(command,'ascii')
+        self.commands[command.upper()]=callback
+
     def error(self, description):
         """s.error(DESCRIPTION) -> CONTINUE
 
@@ -55,14 +74,20 @@ class Server(nntpbits.Protocol):
         commands, or False to disconnect.
 
         """
-        logging.error(description)
+        logging.error("%s: %s" % (threading.get_ident(), description))
         return True
 
     def command(self, cmd):
         """s.command(CMD)
 
-        Process a command (as a bytes object)."""
+        Process a command (as a bytes object).
 
+        If the syntax of CMD is valid then the command is looked up in
+        s.commands.  The key will be an upper-case bytes object.  If
+        found then the value will be called with the argument as a
+        bytes object.
+
+        """
         m=_command_re.match(cmd)
         if not m:
             self.send_line("500 Syntax error")
@@ -77,8 +102,26 @@ class Server(nntpbits.Protocol):
         self.commands[command](arguments)
 
     def quit(self, arguments):
+        """s.quit(ARGUMENTS)
+
+        Implementation of the NNTP QUIT command.
+
+        """
         self.send_line(b"205 Bye")
         self.finished=True
+
+    def capabilities(self, arguments):
+        """s.capabilities(ARGUMENTS)
+
+        Implementation of the NNTP CAPABILITIES command.
+
+        """
+        capabilities=list(self.capabilities)
+        for cmd in [b'IHAVE', b'POST', b'NEWNEWS', b'OVER', b'HDR', b'LIST']:
+            if cmd in self.commands:
+                capabilities.append(cmd)
+        self.send_line("110 Capabilities", flush=False)
+        self.send_lines(capabilities)
 
     @classmethod
     def listen(cls, s, daemon=True):

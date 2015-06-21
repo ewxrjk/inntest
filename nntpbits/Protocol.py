@@ -45,7 +45,7 @@ class Protocol(object):
         """
         pass
 
-    def send_line(self, line):
+    def send_line(self, line, flush=True):
         """p.send_line(BYTES)
 
         Send a bytes object.  The protocol EOL sequence is appended.
@@ -59,7 +59,8 @@ class Protocol(object):
             line=bytes(line,'ascii')
         self.w.write(line)
         self.w.write(b'\r\n')
-        self.w.flush()
+        if flush:
+            self.w.flush()
 
     def send_lines(self, lines):
         """p.send_lines(LIST)

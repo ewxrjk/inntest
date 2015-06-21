@@ -7,7 +7,10 @@ class ServerConnection(nntpbits.Connection):
     """NNTP server endpoint
 
     Construction:
-    nntpbits.ServerConnection() -> NNTP server connection object
+    nntpbits.ServerConnection(SERVER) -> NNTP server connection object
+
+    SERVER is the news server backend, usually a subclass of
+    nntpbits.NewsServer.
 
     Call the socket() or files() method to establish a connection.
     This will cause connected() to be called; that will run in a loop
@@ -19,9 +22,10 @@ class ServerConnection(nntpbits.Connection):
     the ServerConnection.listen() method.
 
     """
-    def __init__(self):
+    def __init__(self, server):
         nntpbits.Connection.__init__(self)
         self._reset()
+        self.server=server
         self.commands={
             b'QUIT': self.quit,
             b'CAPABILITIES': self.capabilities,
@@ -122,5 +126,4 @@ class ServerConnection(nntpbits.Connection):
             if cmd in self.commands:
                 capabilities.append(cmd)
         self.send_line("110 Capabilities", flush=False)
-        self.send_lines(capabilities)
-
+        self.send_lines(self.server.capabilities(capabilities))

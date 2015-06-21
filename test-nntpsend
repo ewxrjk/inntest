@@ -7,9 +7,18 @@ echo ==== Alternative config test run ====
 echo
 
 ./install
-${REALLY} su - ${USER} -c 'dd if=/dev/zero of=/usr/local/news/spool/overview/OV1 bs=1024 count=1536000'
-${REALLY} su - ${USER} -c 'dd if=/dev/zero of=/usr/local/news/spool/overview/OV2 bs=1024 count=1536000'
-./configure core.diff buffindexed.diff
+./configure
+
+echo extra configuration...
+
+${REALLY} sh -c "sed 's/1536000/1024/' < $PREFIX/etc/buffindexed.conf > $PREFIX/etc/buffindex.conf.new"
+${REALLY} mv $PREFIX/etc/buffindex.conf.new $PREFIX/etc/buffindexed.conf
+
+${REALLY} su - ${USER} -c 'dd if=/dev/zero of=/usr/local/news/spool/overview/OV1 bs=1024 count=1024 status=none'
+${REALLY} su - ${USER} -c 'dd if=/dev/zero of=/usr/local/news/spool/overview/OV2 bs=1024 count=1024 status=none'
+
+${REALLY} sh -c "sed 's/ovmethod:.*/ovmethod: buffindexed/' < $PREFIX/etc/inn.conf > $PREFIX/etc/inn.conf.new"
+${REALLY} mv $PREFIX/etc/inn.conf.new $PREFIX/etc/inn.conf
 
 ${REALLY} sh -c "cat >> $PREFIX/etc/newsfeeds" <<EOF
 ${DOMAIN}:${GROUP}:Tf,Wnm:

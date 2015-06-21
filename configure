@@ -3,20 +3,20 @@
 # Configure INN
 #
 # Usage:
-#   configure [PATCH ...]
+#   configure
 #
-# Applies the listed patches to INN's configuration and then starts
-# it.
+# Performs common changes to configuration.
 #
 set -e
 . ./config
-for diff; do
-    echo "Applying $diff ..."
-    ${REALLY} sh -c "cd $PREFIX/etc && patch -p5" < $diff
-done
+
+echo configuration ...
 
 ${REALLY} sh -c "cat >> $PREFIX/etc/incoming.conf" <<EOF
 peer ${DOMAIN} {
   hostname: localhost
 }
 EOF
+
+${REALLY} sh -c "sed 's/pathhost:.*/pathhost: ${PATHHOST}/;s/port:.*/port: ${PORT}/' < $PREFIX/etc/inn.conf > $PREFIX/etc/inn.conf.new"
+${REALLY} mv $PREFIX/etc/inn.conf.new $PREFIX/etc/inn.conf

@@ -7,7 +7,9 @@ echo ==== Main test run ====
 echo
 
 ./install
-./configure core.diff
+./configure
+
+echo extra configuration...
 
 ${REALLY} sh -c "cat >> $PREFIX/etc/innfeed.conf" <<EOF
 peer ${DOMAIN} {

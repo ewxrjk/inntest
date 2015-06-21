@@ -17,8 +17,11 @@ GROUP=greenend.test
 SERVER=localhost
 PORT=1119
 
+# Pathhost of subect server
+PATHHOST=test.anjou.terraraq.org.uk
+
 # Pathhost for test server (and message-ID domain)
-DOMAIN=test.anjou.terraraq.org.uk
+DOMAIN=test.terraraq.uk
 
 # Port for test server
 LOCALPORT=1199

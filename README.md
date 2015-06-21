@@ -1,8 +1,9 @@
 INN Test Utilities
 ==================
 
-This is a test system for INN.  It's not very complete yet.  It
-requires Python 3.4.
+This is a test system for
+[INN](http://www.eyrie.org/~eagle/software/inn/).  It's not very
+complete yet.  It requires Python 3.4.
 
 1. Edit `config` to meet your local settings.
 2. Create `tnews` user and group.  (You can select a different name in

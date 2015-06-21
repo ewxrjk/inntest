@@ -22,8 +22,8 @@ class ServerConnection(nntpbits.Connection):
     the ServerConnection.listen() method.
 
     """
-    def __init__(self, server):
-        nntpbits.Connection.__init__(self)
+    def __init__(self, server, stop=lambda: False):
+        nntpbits.Connection.__init__(self, stop=stop)
         self._reset()
         self.server=server
         self.commands={

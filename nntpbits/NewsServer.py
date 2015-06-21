@@ -25,7 +25,7 @@ class NewsServer(object):
     # -------------------------------------------------------------------------
     # Listening
 
-    def listen_socket(self, s, daemon=True):
+    def listen_socket(self, s, daemon=True, stop=lambda: False):
         """ns.listen(SOCKET, [daemon=DAEMON])
 
         If the argument is a socket then accepts connections on that
@@ -40,13 +40,13 @@ class NewsServer(object):
             def worker(ns, a):
                 logging.info("%x: %s connected"
                              % (threading.get_ident(), a))
-                self.conncls(self).socket(ns)
+                self.conncls(self, stop=stop).socket(ns)
                 logging.info("%x: %s disconnected"
                              % (threading.get_ident(), a))
             t=threading.Thread(target=worker, args=[ns,a], daemon=daemon)
             t.start()
 
-    def listen_address(self, address, port, wait=False, daemon=True):
+    def listen_address(self, address, port, wait=False, daemon=True, stop=lambda: False):
         """ns.listen(NAME, PORT[, wait=WAIT][, daemon=DAEMON])
 
         Resolves NAME:PORT into a list of addresses and invokes
@@ -64,7 +64,10 @@ class NewsServer(object):
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(sockaddr)
             s.listen(socket.SOMAXCONN)
-            t=threading.Thread(target=self.listen_socket, args=[s],daemon=True)
+            t=threading.Thread(target=self.listen_socket,
+                               args=[s],
+                               kwargs={'stop': stop},
+                               daemon=True)
             t.start()
         while wait:
             time.sleep(86400)

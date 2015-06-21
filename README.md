@@ -16,7 +16,7 @@ The test configurations are:
 1. `test-innfeed` - default test configuration
 2. `test-nntpsend` - test with nntpsend and buffindexed overview
 
-If anything goes wrong and you can't see why, consult *.log files.
+If anything goes wrong and you can't see why, consult `*.log` files.
 
 The tests are actually run by `tests.py`, which in turn uses
 `nntpbits/Tests.py` to do the work.  This is part of a general NNTP

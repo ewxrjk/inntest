@@ -1,21 +1,28 @@
 INN Test Utilities
 ==================
 
-This is a test system for INN.  It's not very complete yet.
+This is a test system for INN.  It's not very complete yet.  It
+requires Python 3.4.
 
-1. Edit 'config' to meet your local settings.
-2. Create 'tnews' user and group.  (You can select a different name in
+1. Edit `config` to meet your local settings.
+2. Create `tnews` user and group.  (You can select a different name in
    config.)
-3. Run 'test-all' to build, install and test INN.
-4. Alternatively run 'build' to build it and then indidivual test
+3. Run `test-all` to build, install and test INN.
+4. Alternatively run `build` to build it and then indidivual test
    scripts to install and test with particular configurations.
 
-The tests are:
+The test configurations are:
 
-1. test-innfeed - default test configuration
-2. test-nntpsend - test with nntpsend and buffindexed overview
+1. `test-innfeed` - default test configuration
+2. `test-nntpsend` - test with nntpsend and buffindexed overview
 
 If anything goes wrong and you can't see why, consult *.log files.
+
+The tests are actually run by `tests.py`, which in turn uses
+`nntpbits/Tests.py` to do the work.  This is part of a general NNTP
+support framework; see the other files inside `nntpbits` for details,
+or experiment with the utilities `post.py`, `getgroup.py` and
+`server.py` which all use it.
 
 Copyright 2015 Richard Kettlewell
 

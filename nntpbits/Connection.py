@@ -77,11 +77,10 @@ class Connection(object):
             if isinstance(line, str):
                 line=bytes(line,'ascii')
             if len(line) > 0 and line[0] == b'.':
-                self.w.write(b'.')
-            self.w.write(line)
-            self.w.write(b'\r\n')
-        self.w.write(b'.\r\n')
-        self.w.flush()
+                self.send_line(b'.'+line, flush=False)
+            else:
+                self.send_line(line, flush=False)
+        self.send_line(b'.')
 
     def receive_line(self):
         """p.receive_line() -> LINE

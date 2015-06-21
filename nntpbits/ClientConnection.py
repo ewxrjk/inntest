@@ -22,6 +22,7 @@ class ClientConnection(nntpbits.Connection):
         self.posting=None
         self.reader=None
         self.capability_list=None
+        self.overview_fmt=None
         self.current_group=None
 
     def connect(self, address, timeout=None, source_address=None):
@@ -56,6 +57,9 @@ class ClientConnection(nntpbits.Connection):
         self.capability_list=None
         return self.service
 
+    # -------------------------------------------------------------------------
+    # CAPABILITIES
+
     def _capabilities(self):
         code,arg=self.transact(b"CAPABILITIES")
         if code == 101:
@@ -66,7 +70,8 @@ class ClientConnection(nntpbits.Connection):
     def capabilities(self):
         """n.capabilities() -> LIST
 
-        Return the server's capability list.
+        Return the server's capability list, as a list of bytes
+        objects.
 
         The list is cached so it is efficient to repeatedly call this
         function.
@@ -75,6 +80,23 @@ class ClientConnection(nntpbits.Connection):
         if self.capability_list is None:
             self._capabilities()
         return self.capability_list
+
+    def capabilities_list(self):
+        """n.capabilities_list() -> LIST
+
+        Returns the list of LIST capabilities, as a list of bytes
+        objects.
+
+        As for capabilities(), the list is cached.
+
+        """
+        for cap in self.capabilities():
+            if cap[0:4] == b'LIST':
+                return cap.split()[1:]
+        return []
+
+    # -------------------------------------------------------------------------
+    # MODE READER
 
     def _require_reader(self):
         if self.reader is None:
@@ -101,6 +123,9 @@ class ClientConnection(nntpbits.Connection):
         else:
             raise Exception("MODE READER command failed %s" % self.response)
         self.capability_list = None
+
+    # -------------------------------------------------------------------------
+    # POST & IHAVE
 
     def post(self, article):
         """n.post(ARTICLE)
@@ -183,6 +208,9 @@ class ClientConnection(nntpbits.Connection):
                             % (str(command), self.response))
         return code
 
+    # -------------------------------------------------------------------------
+    # GROUP
+
     def group(self, group):
         """n.group(NAME) -> (count, low, high)
 
@@ -203,6 +231,9 @@ class ClientConnection(nntpbits.Connection):
             raise Exception("Group %s does not exist" % str(group))
         else:
             raise Exception("GROUP command failed: %s" % self.response)
+
+    # -------------------------------------------------------------------------
+    # ARTICLE, HEAD, BODY
 
     def article(self, ident):
         """n.article(NUMBER) -> [LINE] | None
@@ -262,6 +293,93 @@ class ClientConnection(nntpbits.Connection):
         else:
             raise Exception("%s command failed: %s"
                             % (str(command), self.response))
+
+    # -------------------------------------------------------------------------
+    # OVER
+
+    def _list_overview_fmt(self):
+        if b'OVER' in self.capabilities():
+            code,arg=self.transact(b"LIST OVERVIEW.FMT")
+            if code == 215:
+                self.overview_fmt=self.receive_lines()
+                fixups = { b'bytes:': b':bytes', b'lines:': b':lines' }
+                for i in range(0,len(self.overview_fmt)):
+                    l = self.overview_fmt[i].lower()
+                    if len(l) >= 5 and l[-5:] == b':full':
+                        self.overview_fmt[i]=self.overview_fmt[i][:-5]
+                    if l in fixups:
+                        self.overview_fmt[i]=fixups[l]
+            else:
+                self.overview_fmt=[]
+        else:
+            self.overview_fmt=[]
+        return self.overview_fmt
+
+    def list_overview_fmt(self):
+        """n.list_overview_fmt() -> LIST
+
+        Return the list of fields used by the OVER command.
+
+        If the server returns Bytes: or Lines:, these are converted to
+        the RFC3977 values of :bytes and :lines.
+
+        """
+        if self.overview_fmt is None:
+            self._list_overview_fmt()
+        return self.overview_fmt
+
+    def over(self, low, high):
+        """n.over(LOW, HIGH) -> LIST
+
+        Return overview data for a range of messages.  Each list
+        element is an unparsed bytes object as returned from the
+        server.
+
+        Note that LOW and HIGH are _inclusive_ bounds, unlike the
+        usual Python idiom.
+
+        """
+        code,arg=self.transact(bytes('OVER %d-%d' % (low, high), 'ascii'))
+        if code == 224:
+            return self.receive_lines()
+        elif code == 423:
+            return []
+        else:
+            raise Exception("OVER command failed: %s" % self.response)
+
+    def parse_overview(self, line):
+        """n.parse_overview(LINE) -> NUMBER,DICT
+
+        Parse overview data into a dictionary.
+
+        NUMBER is the article number, from the first field.
+
+        Keys in DICT are bytes objects with LOWER CASE header/metadata
+        names, including the leading or trailing colon.  For example,
+        b'subject:' and not b'Subject:' or 'Subject:'.  ield.
+
+        Values in DICT are bytes objects.
+
+        """
+        r={}
+        fields=line.split(b'\t')
+        fmt=self.list_overview_fmt()
+        for n in range(1,len(fields)):
+            field=fields[n]
+            name=fmt[n-1].lower()
+            if n < 6 or name[0:1] == b':':
+                r[name]=field
+            else:
+                n=len(name)
+                if field[0:n].lower() != name:
+                    raise Exception("malformed overview data for %s" % name)
+                while n<len(field) and field[n] in b' \t\r\f\n':
+                    n+=1
+                r[name]=field[n:]
+        return (int(fields[0]), r)
+
+    # -------------------------------------------------------------------------
+    # QUIT
 
     def quit(self):
         """n.quit()

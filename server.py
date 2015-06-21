@@ -21,7 +21,7 @@ def main(argv):
         s.bind(sockaddr)
         s.listen(socket.SOMAXCONN)
         def worker(s):
-            nntpbits.Server.listen(s)
+            nntpbits.ServerConnection.listen(s)
         t=threading.Thread(target=worker, args=[s],daemon=True)
         t.start()
     while True:

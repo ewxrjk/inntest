@@ -18,7 +18,7 @@ def main(argv):
     post(r.server, r.port, article, r.ihave)
 
 def post(server, port, article, ihave):
-    client=nntpbits.Client()
+    client=nntpbits.ClientConnection()
     client.connect((server, port))
     if ihave:
         client.ihave(article)

@@ -1,14 +1,14 @@
-"""Protocol server base class"""
+"""Client/server connection base class"""
 import logging,re,socket
 
 _parse_re=re.compile(b"^([0-9]{3}) (.*)$")
 
-class Protocol(object):
+class Connection(object):
     """Base class for text-based network protocols
 
     Construction:
-    nntpbits.Protocol() -> protocol endpoint object
-    nntpbits.Protocol(eol=EOL) -> protocol endpoint object
+    nntpbits.Connection() -> protocol endpoint object
+    nntpbits.Connection(eol=EOL) -> protocol endpoint object
 
     EOL must be a byte string.  The default is CRLF.
 
@@ -156,7 +156,7 @@ class Protocol(object):
         """p.wait() -> CODE, ARGUMENT
 
         Wait for a response and break it into a response code and
-        argument using the same rules as self.nntpbits.Protocol.parse.
+        argument using the same rules as self.nntpbits.Connection.parse.
 
         """
         self.response=self.receive_line()
@@ -167,7 +167,7 @@ class Protocol(object):
 
         Send a bytes object, appending the protocol EOL sequence.
         Then wait for a response and break it into a response code and
-        argument using the same rules as self.nntpbits.Protocol.parse.
+        argument using the same rules as self.nntpbits.Connection.parse.
 
         """
         self.send_line(cmd)

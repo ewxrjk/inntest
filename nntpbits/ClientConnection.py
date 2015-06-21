@@ -1,20 +1,20 @@
 import nntpbits
-import re,socket
+import logging,re,socket
 
 _group_re=re.compile(b"^([0-9]+) ([0-9]+) ([0-9]+) (.*)$")
 _message_id_re=re.compile(b"Message-ID:\\s*(<.*@.*>)\\s*$", re.IGNORECASE)
 
-class Client(nntpbits.Protocol):
+class ClientConnection(nntpbits.Connection):
     """NNTP client endpoint
 
     Construction:
-    nntpbits.Client() -> NNTP client object
+    nntpbits.ClientConnection() -> NNTP client object
 
     Call the connect() method to actually establish a connection.
 
     """
     def __init__(self):
-        nntpbits.Protocol.__init__(self)
+        nntpbits.Connection.__init__(self)
         self._reset()
 
     def _reset(self):
@@ -32,6 +32,7 @@ class Client(nntpbits.Protocol):
         The arguments are the same as socket.create_connection.
 
         """
+        logging.debug("Connecting to %s port %s" % address)
         self.socket(socket.create_connection(address, timeout,
                                              source_address))
 

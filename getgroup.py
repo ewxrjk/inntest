@@ -16,7 +16,7 @@ def main(argv):
     dump_group(r.server, r.port, r.GROUP)
 
 def dump_group(server, port, group):
-    client=nntpbits.Client()
+    client=nntpbits.ClientConnection()
     client.connect((server, port))
     (count, low, high)=client.group(group)
     linesep=bytes(os.linesep, 'ascii')

@@ -3,23 +3,24 @@ import logging,re,socket,threading
 
 _command_re=re.compile(b"^(\S+)\s*(.*)$")
 
-class Server(nntpbits.Protocol):
+class ServerConnection(nntpbits.Connection):
     """NNTP server endpoint
 
     Construction:
-    nntpbits.Server() -> NNTP server object
+    nntpbits.ServerConnection() -> NNTP server connection object
 
     Call the socket() or files() method to establish a connection.
     This will cause connected() to be called; that will run in a loop
     processing commands until the peer quits or disconnects.
 
-    The intended use is that your application subclass nntpbits.Server
-    and then run an instance in an independent thread for each
-    connection it receives, perhaps using the Server.listen() method.
+    The intended use is that your application subclass
+    nntpbits.ServerConnection and then run an instance in an
+    independent thread for each connection it receives, perhaps using
+    the ServerConnection.listen() method.
 
     """
     def __init__(self):
-        nntpbits.Protocol.__init__(self)
+        nntpbits.Connection.__init__(self)
         self._reset()
         self.commands={
             b'QUIT': self.quit,

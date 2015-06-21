@@ -1,4 +1,4 @@
 """NNTP support utilities"""
-from nntpbits.Protocol import *
-from nntpbits.Client import *
-from nntpbits.Server import *
+from nntpbits.Connection import *
+from nntpbits.ClientConnection import *
+from nntpbits.ServerConnection import *

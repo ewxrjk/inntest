@@ -2,7 +2,7 @@
 PREFIX=/usr/local/news
 
 # Directory where INN source can be found
-DIR=../inn-build
+DIR=${DIR:-../inn-build}
 
 # Command to elevate privilege
 REALLY=really
@@ -11,7 +11,7 @@ REALLY=really
 USER=tnews
 
 # Group to use for testing
-GROUP=greenend.test
+GROUP=local.test
 
 # Name/port of subject server
 SERVER=localhost

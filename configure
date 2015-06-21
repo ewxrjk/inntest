@@ -36,3 +36,6 @@ EOF
 
 ${REALLY} sh -c "sed 's/pathhost:.*/pathhost: ${PATHHOST}/;s/port:.*/port: ${PORT}/' < $PREFIX/etc/inn.conf > $PREFIX/etc/inn.conf.new"
 ${REALLY} mv $PREFIX/etc/inn.conf.new $PREFIX/etc/inn.conf
+if ! grep -q "^${GROUP}" $PREFIX/db/active; then
+    ${REALLY} sh -c "echo '${GROUP} 000000000 0000000001 y' >> $PREFIX/db/active"
+fi

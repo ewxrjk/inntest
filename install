@@ -25,9 +25,19 @@ if [ -e $PREFIX/etc/inn.conf ]; then
     ./shutdown
     sleep 3                         # just in case...
 fi
-cd $DIR
+echo clean ...
+${REALLY} rm -rf $PREFIX/bin/*
+${REALLY} rm -rf $PREFIX/db/*
+${REALLY} rm -rf $PREFIX/doc/*
 ${REALLY} rm -rf $PREFIX/etc/*
-${REALLY} rm -rf $PREFIX/bin/*.real
+${REALLY} rm -rf $PREFIX/http/*
+${REALLY} rm -rf $PREFIX/include/*
+${REALLY} rm -rf $PREFIX/lib/*
+# keep log for old valgrind output etc
+${REALLY} rm -rf $PREFIX/run/*
+${REALLY} rm -rf $PREFIX/share/*
+${REALLY} rm -rf $PREFIX/spool/*
+${REALLY} rm -rf $PREFIX/tmp/*
 echo install ...
 ${REALLY} make -C $DIR install > install.log 2>&1
 if ${VALGRIND:-false}; then

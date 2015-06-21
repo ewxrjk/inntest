@@ -28,3 +28,8 @@ LOCALPORT=1199
 
 # Set to -d to enable nntpbits debug output
 DEBUG=${DEBUG:-}
+
+# Set to true to run INN and utilities under valgrind
+# Output goes ${PREFIX}/log (because writable) - look for filenames like
+# 2015-06-21-182422.innd.6762.log
+VALGRIND=${VALGRIND:-false}

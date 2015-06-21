@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Copyright 2015 Richard Kettlewell
 #
@@ -16,14 +16,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-# Test using nntpbits
+# Shut down INN
 #
 set -e
 . ./config
-
-echo "=== $0 $1 ==="
-
-./tests.py ${DEBUG} \
-           -s "${SERVER}" -p "${PORT}" \
-           -g "${GROUP}" -D "${DOMAIN}" -l "${LOCALPORT}" \
-           -T "./trigger"
+echo shutdown ...
+exec > shutdown.log 2>&1
+${REALLY} su - ${USER} -s /bin/sh -c "${PREFIX}/bin/ctlinnd shutdown inntest" || true
+${REALLY} su - ${USER} -s /bin/sh -c "killall innwatch" || true

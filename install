@@ -1,21 +1,37 @@
 #! /bin/bash
 #
+# Copyright 2015 Richard Kettlewell
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#
 # Install a clean INN
 #
 set -e
 . config
 SELF=$(pwd)
-cd $DIR
 if [ -e $PREFIX/etc/inn.conf ]; then
-    echo shutdown ...
-    ${REALLY} su - ${USER} -c "${PREFIX}/bin/ctlinnd shutdown make-test-inn" > shutdown.log 2>&1 || true
+    ./shutdown
     sleep 3                         # just in case...
 fi
+cd $DIR
 ${REALLY} rm -rf $PREFIX/etc/*
 ${REALLY} rm -rf $PREFIX/bin/*.real
 echo install ...
 ${REALLY} make -C $DIR install > install.log 2>&1
 if ${VALGRIND:-false}; then
+    echo valgrindize ...
     ${REALLY} $SELF/valgrindize --log $PREFIX/log $PREFIX/bin/innd
     ${REALLY} $SELF/valgrindize --log $PREFIX/log $PREFIX/bin/innfeed
     ${REALLY} $SELF/valgrindize --log $PREFIX/log $PREFIX/bin/nnrpd

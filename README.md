@@ -2,28 +2,59 @@ INN Test Utilities
 ==================
 
 This is a test system for
-[INN](http://www.eyrie.org/~eagle/software/inn/).  It's not very
+[INN](http://www.eyrie.org/~eagle/software/inn/).  It’s not very
 complete yet.  It requires Python 3.4.
+
+Basics
+------
 
 1. Edit `config` to meet your local settings.
 2. Create `tnews` user and group.  (You can select a different name in
    config.)
 3. Run `test-all` to build, install and test INN.
-4. Alternatively run `build` to build it and then indidivual test
-   scripts to install and test with particular configurations.
+
+If anything goes wrong and you can’t see why, consult `*.log` files.
+
+Individual Configurations
+-------------------------
+
+A more fine-grained approach is to run `build` to build INN and then
+run indidivual test scripts to install and test with particular
+configurations.
 
 The test configurations are:
 
 1. `test-innfeed` - default test configuration
 2. `test-nntpsend` - test with nntpsend and buffindexed overview
 
-If anything goes wrong and you can't see why, consult `*.log` files.
+Using valgrind
+--------------
+
+Either set `VALGRIND=true` in `config`, or pass it in as environment variable:
+
+    VALGRIND=true ./test-innfeed
+
+Coverage
+--------
+
+...todo...
+
+Sanitizers
+----------
+
+...todo...
+
+nntpbits Framework
+------------------
 
 The tests are actually run by `tests.py`, which in turn uses
 `nntpbits/Tests.py` to do the work.  This is part of a general NNTP
 support framework; see the other files inside `nntpbits` for details,
 or experiment with the utilities `post.py`, `getgroup.py` and
 `server.py` which all use it.
+
+Copyright
+---------
 
 With the exception of the Python suppressions, this work is:
 

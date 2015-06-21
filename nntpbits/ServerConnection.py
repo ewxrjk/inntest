@@ -65,9 +65,7 @@ class ServerConnection(nntpbits.Connection):
         overriding them as subclass methods.)
 
         """
-        if isinstance(command, str):
-            command=bytes(command,'ascii')
-        self.commands[command.upper()]=callback
+        self.commands[nntpbits._normalize(command).upper()]=callback
 
     def error(self, description):
         """s.error(DESCRIPTION) -> CONTINUE

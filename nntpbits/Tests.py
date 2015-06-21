@@ -65,10 +65,10 @@ class Tests(object):
         """
         method=getattr(self, test_name, None)
         if method is None:
-            raise Exception("no such test as '%s'", test_name)
+            raise Exception("no such test as '%s'" % test_name)
         return method(*args, **kwargs)
 
-    def test_post(self, ident=None, description=b"nntpbits posting test"):
+    def test_post(self, ident=None, description=b"posting test"):
         """t.test_post([ident=IDENT][description=SUBJECT])
 
         Posts to the test newsgroup and verifies that the article
@@ -89,7 +89,7 @@ class Tests(object):
             ident=nntpbits._normalize(ident)
         article=[b'Newsgroups: ' + self.group,
                  b'From: ' + self.email,
-                 b'Subject: nntpbits ' + nntpbits._normalize(description) + b' (ignore)',
+                 b'Subject: [nntpbits] ' + nntpbits._normalize(description) + b' (ignore)',
                  b'Message-ID: ' + ident,
                  b'',
                  b'nntpbits.Test test posting']

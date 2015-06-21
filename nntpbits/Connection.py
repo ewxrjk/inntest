@@ -1,5 +1,6 @@
 """Client/server connection base class"""
 import logging,re,socket
+import nntpbits
 
 _parse_re=re.compile(b"^([0-9]{3}) (.*)$")
 
@@ -55,9 +56,7 @@ class Connection(object):
 
         """
         logging.debug("SEND %s" % line)
-        if isinstance(line, str):
-            line=bytes(line,'ascii')
-        self.w.write(line)
+        self.w.write(nntpbits._normalize(line))
         self.w.write(b'\r\n')
         if flush:
             self.w.flush()
@@ -74,8 +73,7 @@ class Connection(object):
 
         """
         for line in lines:
-            if isinstance(line, str):
-                line=bytes(line,'ascii')
+            line = nntpbits._normalize(line)
             if len(line) > 0 and line[0] == b'.':
                 self.send_line(b'.'+line, flush=False)
             else:

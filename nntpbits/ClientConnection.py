@@ -171,8 +171,7 @@ class ClientConnection(nntpbits.Connection):
         instead.
 
         """
-        if isinstance(ident, str):
-            article=bytes(ident,'ascii')
+        ident=nntpbits._normalize(ident)
         if ident is None:
             if isinstance(article, bytes):
                 article=article.splitlines()
@@ -188,8 +187,7 @@ class ClientConnection(nntpbits.Connection):
         return self._post(article, b'IHAVE', ident, 335, 235)
 
     def _post(self, article, command, ident, initial_response, ok_response):
-        if isinstance(article, str):
-            article=bytes(article,'ascii')
+        article=nntpbits._normalize(article)
         if isinstance(article, bytes):
             article=article.splitlines()
         code,arg=self.transact(command if ident is None
@@ -218,8 +216,7 @@ class ClientConnection(nntpbits.Connection):
 
         """
         self._require_reader()
-        if isinstance(group, str):
-            group=bytes(group,"ascii")
+        group=nntpbits._normalize(group)
         code,arg=self.transact(b"GROUP " + group)
         if code == 211:
             m=_group_re.match(arg)
@@ -283,9 +280,7 @@ class ClientConnection(nntpbits.Connection):
         self._require_reader()
         if isinstance(ident, int):
             ident="%d" % ident
-        if isinstance(ident, str):
-            ident=bytes(ident,'ascii')
-        code,arg=self.transact(command + b' ' + ident)
+        code,arg=self.transact(command + b' ' + nntpbits._normalize(ident))
         if code == response:
             return self.receive_lines()
         elif code == 423 or code == 430:

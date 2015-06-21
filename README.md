@@ -24,6 +24,8 @@ support framework; see the other files inside `nntpbits` for details,
 or experiment with the utilities `post.py`, `getgroup.py` and
 `server.py` which all use it.
 
+With the exception of the Python suppressions, this work is:
+
 Copyright 2015 Richard Kettlewell
 
 This program is free software: you can redistribute it and/or modify

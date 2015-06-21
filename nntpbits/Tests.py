@@ -84,6 +84,11 @@ class Tests(object):
         else:
             return nntpbits._normalize(ident)
 
+    def _date(self):
+        return bytes(time.strftime("%a, %d %b %Y %H:%M:%S +0000",
+                                   time.gmtime()),
+                     'ascii')
+
     # -------------------------------------------------------------------------
     # Enumerating and running tests
 
@@ -122,7 +127,7 @@ class Tests(object):
         return self.localserver
 
     # -------------------------------------------------------------------------
-    # Tests
+    # Testing POST
 
     def test_post(self, ident=None, description=b"posting test"):
         """t.test_post([ident=IDENT][description=SUBJECT])
@@ -149,6 +154,10 @@ class Tests(object):
         conn=nntpbits.ClientConnection()
         conn.connect((self.address, self.port))
         conn.post(article)
+        self._check_posted(conn, ident)
+        conn.quit()
+
+    def _check_posted(self, conn, ident):
         article_posted=conn.article(ident)
         if article_posted is None:
             raise Exception("article cannot be retrieved by message-ID")
@@ -165,7 +174,6 @@ class Tests(object):
         article_posted=conn.article(number_in_group)
         if article_posted is None:
             raise Exception("article cannot be retrieved from group")
-        conn.quit()
 
     def test_post_propagates(self, ident=None, description=b'propagation test'):
         """t.test_post_propagates([ident=IDENT][description=SUBJECT])
@@ -195,3 +203,41 @@ class Tests(object):
                         break
             if ident not in s.ihave_submitted:
                 raise Exception("article never propagated")
+
+    # -------------------------------------------------------------------------
+    # Testing IHAVE
+
+    def test_ihave(self, ident=None, description=b"ihave test"):
+        """t.test_ihave([ident=IDENT][description=SUBJECT])
+
+        Feed a post to the test newsgroup and verifies that the
+        article appears.
+
+        If IDENT is specified then this value will be used as the
+        message ID.
+
+        If DESCRIPTION is specified then it will appear in the subject
+        line.
+
+        Returns True on success and False on failure.
+
+        """
+        ident=self._ident(ident)
+        article=[b'Path: ' + self.domain + b'!not-for-mail',
+                 b'Newsgroups: ' + self.group,
+                 b'From: ' + self.email,
+                 b'Subject: [nntpbits] ' + nntpbits._normalize(description) + b' (ignore)',
+                 b'Message-ID: ' + ident,
+                 b'Date: ' + self._date(),
+                 b'',
+                 b'nntpbits.Test test posting']
+        conn=nntpbits.ClientConnection()
+        conn.connect((self.address, self.port))
+        conn.ihave(article)
+        self._check_posted(conn, ident)
+        conn.quit()
+
+    # No corresponding test_ihave_propagation, because the normal
+    # configuration would be that the subject server will think
+    # self.domain is our pathhost and therefore not feed it back to
+    # us.

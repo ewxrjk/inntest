@@ -1,8 +1,6 @@
 #! /usr/bin/python3
-import argparse,logging,sys
+import argparse,logging,sys,threading,time
 import nntpbits
-
-stopped=False
 
 def main(argv):
     p=argparse.ArgumentParser()
@@ -16,16 +14,11 @@ def main(argv):
     logging.basicConfig(level=r.debug)
     server=nntpbits.NewsServer()
     try:
-        server.listen_address(r.server, r.port, wait=True, daemon=True, stop=stop)
+        server.listen_address(r.server, r.port, wait=True, daemon=True)
     except KeyboardInterrupt:
-        global stopped
         logging.info("stopping server")
-        stopped=True
+        nntpbits.stop()
         sys.exit(0)
-
-def stop():
-    if stopped:
-        raise Exception("stop server")
 
 if __name__ == '__main__':
     main(sys.argv[1:])

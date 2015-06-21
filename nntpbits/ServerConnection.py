@@ -2,6 +2,50 @@ import nntpbits
 import logging,re,socket,threading
 
 _command_re=re.compile(b"^(\S+)\s*(.*)$")
+_message_id_re=re.compile(b'^<[^@]+@[^@]+>$')
+
+_responses={
+    100: 'Help text follows',
+    101: 'Capabilities follow',
+    200: 'Posting allowed',
+    201: 'Posting prohibited',
+    205: 'Bye',
+    215: 'Information follows',
+    220: 'Article follows',
+    221: 'Header follows',
+    222: 'Body follows',
+    223: 'Article selected',
+    224: 'Overview information follows',
+    225: 'Headers follow',
+    230: 'New message IDs follow',
+    231: 'New groups follow',
+    235: 'OK',
+    240: 'OK',
+    335: 'Send article',
+    340: 'Send article',
+    400: 'Service no longer available',
+    401: 'Wrong mode',
+    403: 'It broke',
+    411: 'No such group',
+    412: 'No group selected',
+    420: 'No article selected',
+    421: 'No next article',
+    422: 'No previous article',
+    423: 'No such article',
+    430: 'No such article',
+    435: 'Not wanted',
+    436: 'Try later',
+    437: 'Not wanted',
+    440: 'Posting prohibited',
+    441: 'Posting failed',
+    480: 'Authentication required',
+    483: 'Confidentiality required',
+    500: 'Unknown command',
+    501: 'Syntax error',
+    502: 'Begone',
+    503: 'Not supported',
+    504: 'Invalid base64',
+}
 
 class ServerConnection(nntpbits.Connection):
     """NNTP server endpoint
@@ -22,13 +66,14 @@ class ServerConnection(nntpbits.Connection):
     the ServerConnection.listen() method.
 
     """
-    def __init__(self, server, stop=lambda: False):
-        nntpbits.Connection.__init__(self, stop=stop)
+    def __init__(self, server, stoppable=True):
+        nntpbits.Connection.__init__(self, stoppable=stoppable)
         self._reset()
         self.server=server
         self.commands={
-            b'QUIT': self.quit,
             b'CAPABILITIES': self.capabilities,
+            b'IHAVE': self.ihave,
+            b'QUIT': self.quit,
         }
         self.capabilities=[b"VERSION 2",
                            b"IMPLEMENTATION inntest"]
@@ -44,13 +89,13 @@ class ServerConnection(nntpbits.Connection):
         disconnects or sends the QUIT command.
 
         """
-        self.send_line(b"200 Hello")
-        r = self.receive_line()
+        self.respond(200)
+        r=self.receive_line()
         while r is not None:
             self.command(r)
             if self.finished:
                 break
-            r = self.receive_line()
+            r=self.receive_line()
         self.disconnect()
 
     def register(self, command, callback):
@@ -67,18 +112,23 @@ class ServerConnection(nntpbits.Connection):
         """
         self.commands[nntpbits._normalize(command).upper()]=callback
 
-    def error(self, description):
-        """s.error(DESCRIPTION) -> CONTINUE
+    def respond(self, response, description=None, log=None, flush=True,
+                detail=""):
+        """s.respond(RESPONSE, DESCRIPTION)
 
-        Called when the client does something wrong.  DESCRIPTION is a
-        string describing the problem.
-
-        The return values should be True to carry on accepting
-        commands, or False to disconnect.
+        Send an error message to the peer.
 
         """
-        logging.error("%s: %s" % (threading.get_ident(), description))
-        return True
+        if log is None and response >= 500:
+            log=logging.error
+        if description is None:
+            if response in _responses:
+                description=_responses[response]
+            else:
+                description="Derp"
+        if log is not None:
+            log("%s: %s %s" % (threading.get_ident(), description, detail))
+        self.send_line("%d %s" % (response, description), flush=flush)
 
     def command(self, cmd):
         """s.command(CMD)
@@ -93,25 +143,25 @@ class ServerConnection(nntpbits.Connection):
         """
         m=_command_re.match(cmd)
         if not m:
-            self.send_line("500 Syntax error")
-            self.finished=not self.error("Cannot parse command: %s" % cmd)
-            return
+            return self.respond(500, "Malformed command")
         command=m.group(1).upper()
         arguments=m.group(2)
         if command not in self.commands:
-            self.send_line("500 Unrecognized command")
-            self.finished=not self.error("Unrecognized command: %s" % cmd)
-            return
+            return self.respond(500, detail=command)
         self.commands[command](arguments)
 
-    def quit(self, arguments):
-        """s.quit(ARGUMENTS)
+    def ihave(self, arguments):
+        """s.ihave(ARGUMENTS)
 
-        Implementation of the NNTP QUIT command.
-
-        """
-        self.send_line(b"205 Bye")
-        self.finished=True
+        Implementation of the NNTP IHAVE command."""
+        if not _message_id_re.match(arguments):
+            return self.respond(501)
+        (rc,argument)=self.server.ihave_check(arguments)
+        self.respond(rc,argument)
+        if rc==335:
+            article=self.receive_lines()
+            (rc,argument)=self.server.ihave(arguments, article)
+            self.respond(rc, argument)
 
     def capabilities(self, arguments):
         """s.capabilities(ARGUMENTS)
@@ -123,5 +173,14 @@ class ServerConnection(nntpbits.Connection):
         for cmd in [b'IHAVE', b'POST', b'NEWNEWS', b'OVER', b'HDR', b'LIST']:
             if cmd in self.commands:
                 capabilities.append(cmd)
-        self.send_line("110 Capabilities", flush=False)
+        self.respond(110, flush=False)
         self.send_lines(self.server.capabilities(capabilities))
+
+    def quit(self, arguments):
+        """s.quit(ARGUMENTS)
+
+        Implementation of the NNTP QUIT command.
+
+        """
+        self.respond(205)
+        self.finished=True

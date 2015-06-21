@@ -1,5 +1,5 @@
 import nntpbits
-import logging,socket,threading,time
+import logging,select,socket,threading,time,traceback
 
 class NewsServer(object):
     """NewsServer() -> NNTP server object
@@ -25,7 +25,7 @@ class NewsServer(object):
     # -------------------------------------------------------------------------
     # Listening
 
-    def listen_socket(self, s, daemon=True, stop=lambda: False):
+    def listen_socket(self, s, daemon=True):
         """ns.listen(SOCKET, [daemon=DAEMON])
 
         If the argument is a socket then accepts connections on that
@@ -35,42 +35,89 @@ class NewsServer(object):
         though.)
 
         """
+        s.setblocking(False)
         while True:
-            (ns,a)=s.accept()
+            nntpbits._maybe_stop()
+            select.select([s],[],[],1.0)
+            try:
+                (ns,a)=s.accept()
+            except BlockingIOError:
+                continue
             def worker(ns, a):
-                logging.info("%x: %s connected"
-                             % (threading.get_ident(), a))
-                self.conncls(self, stop=stop).socket(ns)
-                logging.info("%x: %s disconnected"
-                             % (threading.get_ident(), a))
+                try:
+                    logging.info("%x: connected %s"
+                                 % (threading.get_ident(), a))
+                    self.conncls(self).socket(ns)
+                    logging.info("%x: disconnected %s"
+                                 % (threading.get_ident(), a))
+                except nntpbits._Stop:
+                    logging.debug("%x: client stopped %s"
+                                  % (threading.get_ident(), a))
+                except Exception as e:
+                    logging.error("%x: client error: %s %s"
+                                  % (threading.get_ident(), e, a))
+                    logging.error("%x: %s"
+                                  % (threading.get_ident(), traceback.format_exc()))
+                finally:
+                    nntpbits.finished_thread()
             t=threading.Thread(target=worker, args=[ns,a], daemon=daemon)
-            t.start()
+            nntpbits.start_thread(t)
 
-    def listen_address(self, address, port, wait=False, daemon=True, stop=lambda: False):
-        """ns.listen(NAME, PORT[, wait=WAIT][, daemon=DAEMON])
+    def listen_address(self, address, port, wait=False, daemon=True):
+        """ns.listen(ADDRESS, PORT[, wait=WAIT][, daemon=DAEMON])
 
-        Resolves NAME:PORT into a list of addresses and invokes
+        Resolves ADDRESS:PORT into a list of addresses and invokes
         ns.listen_socket in a subthread for each of them.
+
+        ADDRESS would normally be a local address (by name or number).
+        The special address '*' means both the IPv4 and IPv6 all-hosts
+        addresses, and the special address '*localhost' means both the
+        IPv4 and IPv6 localhost addresses (even if 'localhost' does
+        not resolve to both).
 
         If the WAIT argument is set to True then this method doesn't
         return but instead blocks.
 
         """
-        addrs=socket.getaddrinfo(address, port, 0, socket.SOCK_STREAM, 0,
-                                 socket.AI_PASSIVE|socket.AI_ADDRCONFIG)
+        if address == '*':
+            addresses = ['0.0.0.0','::']
+        elif address == '*localhost':
+            addresses = ['127.0.0.1','::1']
+        else:
+            addresses = [address]
+        addrs=[]
+        for address in addresses:
+            addrs.extend(socket.getaddrinfo(address, port,
+                                            0, socket.SOCK_STREAM, 0,
+                                            socket.AI_PASSIVE
+                                            |socket.AI_ADDRCONFIG))
         for addr in addrs:
-            (family, type, proto, canonname, sockaddr)=addr
-            s=socket.socket(family,type,proto)
+            (family, type_, proto, canonname, sockaddr)=addr
+            s=socket.socket(family,type_,proto)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(sockaddr)
             s.listen(socket.SOMAXCONN)
-            t=threading.Thread(target=self.listen_socket,
-                               args=[s],
-                               kwargs={'stop': stop},
-                               daemon=True)
-            t.start()
+            def worker(s, sockaddr):
+                try:
+                    logging.info("%x: listener started %s"
+                                 % (threading.get_ident(), sockaddr))
+                    self.listen_socket(s, daemon=daemon)
+                except nntpbits._Stop:
+                    logging.debug("%x: listener stopped %s"
+                                  % (threading.get_ident(), sockaddr))
+                except Exception as e:
+                    logging.error("%x: listener error %s %s"
+                                  % (threading.get_ident(), e, sockaddr))
+                    logging.error("%x: %s"
+                                  % (threading.get_ident(),
+                                     traceback.format_exc()))
+                finally:
+                    nntpbits.finished_thread()
+            t=threading.Thread(target=worker, args=[s,sockaddr], daemon=daemon)
+            nntpbits.start_thread(t)
         while wait:
-            time.sleep(86400)
+            nntpbits._maybe_stop()
+            time.sleep(1)
 
     # -------------------------------------------------------------------------
     # CAPABILITIES
@@ -96,7 +143,7 @@ class NewsServer(object):
         a peering-only server.
 
         """
-        return (440, "Posting not implemented")
+        return (440, "Posting not available")
 
     def post(self, article):
         """ns.post(ARTICLE) -> (RESPONSE, ARGUMENT)
@@ -108,7 +155,7 @@ class NewsServer(object):
         success and 441 for an error.
 
         """
-        return (441, "Posting not implemented")
+        return (441, "Posting not available")
 
     # -------------------------------------------------------------------------
     # IHAVE
@@ -126,7 +173,7 @@ class NewsServer(object):
         permitted.
 
         """
-        return (480, "Peering not implemented")
+        return (480, "Peering not available")
 
     def ihave(self, ident, article):
         """ns.ihave(IDENT, ARTICLE) -> (RESPONSE, ARGUMENT)
@@ -140,4 +187,4 @@ class NewsServer(object):
         article was rejected.
 
         """
-        return (480, "Peering not implemented")
+        return (480, "Peering not available")

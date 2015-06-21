@@ -10,19 +10,15 @@ class Connection(object):
     Construction:
     nntpbits.Connection() -> protocol endpoint object
     nntpbits.Connection(eol=EOL) -> protocol endpoint object
-    nntpbits.Connection(stop=STOP) -> protocol endpoint object
 
     EOL must be a byte string.  The default is CRLF.
 
-    STOP is called while waiting for IO.  It can raise an exception to
-    abandon the connection.
-
     """
 
-    def __init__(self, eol=b"\r\n", stop=lambda: False):
+    def __init__(self, eol=b"\r\n", stoppable=True):
         self.eol=eol
-        self.stop=stop
         self.sock=None
+        self.stoppable=stoppable
 
     def files(self, r, w):
         """p.files(r=READER, w=WRITER)
@@ -112,11 +108,15 @@ class Connection(object):
         except BlockingIOError:
             return False
 
+    def _maybe_stop(self):
+        if self.stoppable:
+            nntpbits._maybe_stop()
+
     def _read_byte(self):
         while self.buffer_index >= len(self.buffer):
             while not self._fill():
                 select.select([self.sock],[],[],1.0)
-                self.stop()
+                self._maybe_stop()
             if self.eof:
                 return None
         ch=self.buffer[self.buffer_index:self.buffer_index+1]
@@ -133,7 +133,7 @@ class Connection(object):
 
         """
         if stop_check:
-            self.stop()
+            self._maybe_stop()
         line=b"";
         while not self._complete(line):
             ch=self._read_byte()

@@ -13,8 +13,8 @@ class ClientConnection(nntpbits.Connection):
     Call the connect() method to actually establish a connection.
 
     """
-    def __init__(self, stop=lambda: False):
-        nntpbits.Connection.__init__(self, stop=stop)
+    def __init__(self, stoppable=False):
+        nntpbits.Connection.__init__(self, stoppable=stoppable)
         self._reset()
 
     def _reset(self):

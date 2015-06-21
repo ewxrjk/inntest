@@ -127,7 +127,7 @@ class ServerConnection(nntpbits.Connection):
             else:
                 description="Derp"
         if log is not None:
-            log("%s: %s %s" % (threading.get_ident(), description, detail))
+            log("%x: %s %s" % (threading.get_ident(), description, detail))
         self.send_line("%d %s" % (response, description), flush=flush)
 
     def command(self, cmd):

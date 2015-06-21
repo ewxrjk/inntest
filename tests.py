@@ -37,8 +37,25 @@ def main(argv):
     t=cls(r.server, r.port, group=r.group, email=r.email, domain=r.domain,
           localserver=('*', r.localport), timelimit=r.timelimit,
           trigger=r.trigger)
+    tested=0
+    ok=0
+    failed=[]
     for test_name in r.TEST:
-        t.run_test(test_name)
+        logging.info("Running test %s" % test_name)
+        try:
+            tested+=1
+            t.run_test(test_name)
+            ok+=1
+        except Exception as e:
+            logging.error("Test %s failed: %s" % (test_name, e))
+            logging.error("%s" % traceback.format_exc())
+            failed+=test_name
+    logging.info("%d/%d tests succeeded" % (ok, tested))
+    if len(failed) > 0:
+        logging.error("failed tests: %s" % ", ".join(failed))
+    else:
+        logging.info("SUCCESS")
+    return 1 if ok < tested else 0
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    sys.exit(main(sys.argv[1:]))

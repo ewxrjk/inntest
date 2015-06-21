@@ -124,25 +124,3 @@ class ServerConnection(nntpbits.Connection):
         self.send_line("110 Capabilities", flush=False)
         self.send_lines(capabilities)
 
-    @classmethod
-    def listen(cls, s, daemon=True):
-        """CLASS.listen(SOCKET, [daemon=DAEMON])
-
-        Accept inbound connections on SOCKET and for each connection,
-        create an instance of CLASS and use it to service that
-        connection.
-
-        This method never returns.  (It could raise an exception,
-        though.)
-
-        """
-        while True:
-            (ns,a)=s.accept()
-            def worker(ns, a):
-                logging.info("%x: %s connected"
-                             % (threading.get_ident(), a))
-                cls().socket(ns)
-                logging.info("%x: %s disconnected"
-                             % (threading.get_ident(), a))
-            t=threading.Thread(target=worker, args=[ns,a], daemon=daemon)
-            t.start()

@@ -8,7 +8,7 @@ SELF=$(pwd)
 cd $DIR
 if [ -e $PREFIX/etc/inn.conf ]; then
     echo shutdown ...
-    ${REALLY} su - tnews -c 'bin/ctlinnd shutdown make-test-inn' || true
+    ${REALLY} su - ${USER} -c "${PREFIX}/bin/ctlinnd shutdown make-test-inn" > shutdown.log 2>&1 || true
     sleep 3                         # just in case...
 fi
 ${REALLY} rm -rf $PREFIX/etc/*

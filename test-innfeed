@@ -1,0 +1,25 @@
+#! /bin/bash
+set -e
+. ./config
+
+echo
+echo ==== Main test run ====
+echo
+
+./install
+./configure core.diff
+
+${REALLY} sh -c "cat >> $PREFIX/etc/innfeed.conf" <<EOF
+peer ${DOMAIN} {
+  ip-name: localhost
+  port-number: ${LOCALPORT}
+}
+EOF
+
+${REALLY} sh -c "cat >> $PREFIX/etc/newsfeeds" <<EOF
+innfeed!:!*:Tc,Wnm*:$PREFIX/bin/innfeed
+${DOMAIN}:${GROUP}:Tm:innfeed!
+EOF
+
+./start
+./test-nntpbits innfeed

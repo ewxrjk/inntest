@@ -9,7 +9,7 @@ echo autogen ...
 ./autogen
 echo configure ...
 ./configure --prefix=$PREFIX --with-perl --with-python --with-openssl \
-            --with-sasl --with-news-user=tnews --with-news-group=tnews \
+            --with-sasl --with-news-user=${USER} --with-news-group=${USER} \
             --enable-largefiles --with-innd-port=1119 --with-bdb --with-zlib \
             > configure.log 2>&1
 cd -

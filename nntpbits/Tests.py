@@ -193,6 +193,7 @@ class Tests(object):
         with self._local_server() as s:
             self.test_post(ident, description)
             if self.trigger is not None:
+                logging.debug("executing trigger")
                 rc=os.system(self.trigger)
                 if rc != 0:
                     logging.error("Trigger wait status: %#04x" % rc)

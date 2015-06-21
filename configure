@@ -1,6 +1,6 @@
 #! /bin/bash
 #
-# Configure and start INN
+# Configure INN
 #
 # Usage:
 #   configure [PATCH ...]
@@ -14,7 +14,9 @@ for diff; do
     echo "Applying $diff ..."
     ${REALLY} sh -c "cd $PREFIX/etc && patch -p5" < $diff
 done
-echo start ...
-${REALLY} su - tnews -c 'bin/rc.news' > start.log 2>&1
-sleep 3                         # let it settle
-ctlinnd -s flush ""             # kick main innfeed
+
+${REALLY} sh -c "cat >> $PREFIX/etc/incoming.conf" <<EOF
+peer ${DOMAIN} {
+  hostname: localhost
+}
+EOF

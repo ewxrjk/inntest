@@ -3,12 +3,22 @@ set -e
 . ./config
 
 echo
-echo ==== nntpsend/buffindexed tests ====
+echo ==== Alternative config test run ====
 echo
 
 ./install
-${REALLY} su - tnews -c 'dd if=/dev/zero of=/usr/local/news/spool/overview/OV1 bs=1024 count=1536000'
-${REALLY} su - tnews -c 'dd if=/dev/zero of=/usr/local/news/spool/overview/OV2 bs=1024 count=1536000'
-./configure core.diff nntpsend.diff buffindexed.diff
-./test-injection nntpsend
-./test-receipt
+${REALLY} su - ${USER} -c 'dd if=/dev/zero of=/usr/local/news/spool/overview/OV1 bs=1024 count=1536000'
+${REALLY} su - ${USER} -c 'dd if=/dev/zero of=/usr/local/news/spool/overview/OV2 bs=1024 count=1536000'
+./configure core.diff buffindexed.diff
+
+${REALLY} sh -c "cat >> $PREFIX/etc/newsfeeds" <<EOF
+${DOMAIN}:${GROUP}:Tf,Wnm:
+EOF
+
+${REALLY} sh -c "cat >> $PREFIX/etc/nntpsend.ctl" <<EOF
+${DOMAIN}:localhost::
+EOF
+# (port number is -P argument to nntpsend, see trigger script)
+
+./start
+./test-nntpbits nntpsend

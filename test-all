@@ -4,5 +4,5 @@ set -e
 
 ./build
 
-./test-main
+./test-innfeed
 ./test-nntpsend

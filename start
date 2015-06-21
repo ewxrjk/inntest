@@ -1,0 +1,15 @@
+#! /bin/bash
+#
+# Start INN
+#
+# Usage:
+#   start
+#
+# Starts INN.
+#
+set -e
+. ./config
+
+echo start ...
+${REALLY} su - ${USER} -c "${PREFIX}/bin/rc.news" > start.log 2>&1
+sleep 3                         # let it settle

@@ -1,5 +1,5 @@
 #! /usr/bin/python3
-import argparse,logging,sys
+import argparse,logging,sys,traceback
 import nntpbits
 
 def main(argv):
@@ -49,7 +49,7 @@ def main(argv):
         except Exception as e:
             logging.error("Test %s failed: %s" % (test_name, e))
             logging.error("%s" % traceback.format_exc())
-            failed+=test_name
+            failed.append(test_name)
     logging.info("%d/%d tests succeeded" % (ok, tested))
     if len(failed) > 0:
         logging.error("failed tests: %s" % ", ".join(failed))

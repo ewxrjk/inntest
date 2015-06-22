@@ -27,6 +27,17 @@ The test configurations are:
 1. `test-innfeed` - default test configuration
 2. `test-nntpsend` - test with nntpsend and buffindexed overview
 
+Manual Control
+--------------
+
+You can start and stop the server in its current configuration, and
+run tests by hand:
+
+    ./start
+    ./test-nntpbits
+    # ... edit, repeat ...
+    ./shutdown
+
 Using valgrind
 --------------
 

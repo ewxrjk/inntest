@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import nntpbits
-import base64,hashlib,inspect,logging,os,struct,threading,time
+import base64,hashlib,inspect,logging,os,re,struct,threading,time
 
 class TestServer(nntpbits.NewsServer):
     def __init__(self, conncls=nntpbits.ServerConnection):
@@ -258,3 +258,74 @@ class Tests(object):
     # configuration would be that the subject server will think
     # self.domain is our pathhost and therefore not feed it back to
     # us.
+
+    # -------------------------------------------------------------------------
+    # Testing LIST
+
+    def test_list(self):
+        conn=nntpbits.ClientConnection()
+        conn.connect((self.address, self.port))
+        for kw in conn.capabilities_list():
+            self._test_list(conn, kw)
+        if b'MODE-READER' in conn.capabilities():
+            conn._mode_reader() # cheating
+            for kw in conn.capabilities_list():
+                self._test_list(conn, kw)
+        # TODO check with nontrivial wildmat
+        conn.quit()
+
+    _list_active_re=re.compile(b'^(\\S+) +(\\d+) +(\\d+) +([ynmxj]|=\S+)$')
+    _list_active_times_re=re.compile(b'^(\\S+) +(\d+) +(.*)$')
+    _list_distrib_pats_re=re.compile(b'^(\\d+):([^:]+):(.*)$')
+    _list_newsgroups_re=re.compile(b'^(\\S+)[ \\t]+(.*)$')
+    _list_headers_re=re.compile(b'^(:?\\S+)$')
+    # RFC6048 extras
+    _list_counts_re=re.compile(b'^(\\S+) +(\\d+) +(\\d+) +(\\d+) +([ynmxj]|=\S+)$')
+    _list_distributions_re=re.compile(b'^(\\S+)[ \t]+(.*)$')
+    _list_moderators_re=re.compile(b'^([^:]+):(.*)$') # TODO %%/%s rules
+    _list_motd_re=re.compile(b'')                     # anything goes
+    _list_subscriptions_re=re.compile(b'^(\\S+)$')
+
+    def _test_list(self, conn, kw):
+        try:
+            lines=conn.list(kw)
+        except Exception as e:
+            # Can't check this one, but not worth failing a test for
+            logging.error(e)
+            return
+        name='list_'+str(kw, 'ascii').replace('.', '_').lower()
+        regex_name='_'+name+'_re'
+        regex=getattr(self, regex_name, None)
+        if regex is not None:
+            for line in lines:
+                if not regex.match(line):
+                    raise Exception("LIST %s: malformed line: %s" % (kw, line))
+            return
+        method_name='_check_' + name
+        method=getattr(self, method_name, None)
+        if method is None:
+            logging.error("don't know how to check LIST %s" % (kw))
+        else:
+            return method(lines, kw)
+
+
+    def _check_list_overview_fmt(self, lines, kw):
+        _overview_initial=[b'Subject:',
+                           b'From:',
+                           b'Date:',
+                           b'Message-ID:',
+                           b'References:']
+        for i in range(0, len(_overview_initial)):
+            if _overview_initial[i].lower() != lines[i].lower():
+                raise Exception("LIST OVERVIEW.FMT: header %d wrong: %s"
+                                % (i+1, lines[i]))
+        if lines[5].lower() != b'bytes:' and lines[5].lower() != b':bytes':
+            raise Exception("LIST OVERVIEW.FMT: header %d wrong: %s"
+                            % (6, lines[i]))
+        if lines[6].lower() != b'lines:' and lines[6].lower() != b':lines':
+            raise Exception("LIST OVERVIEW.FMT: header %d wrong: %s"
+                            % (7, lines[i]))
+        for i in range(7, len(lines)):
+            if not lines[i].lower().endswith(b':full'):
+                raise Exception("LIST OVERVIEW.FMT: header %d partial: %s"
+                                % (i+1, lines[i]))

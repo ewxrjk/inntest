@@ -390,6 +390,24 @@ class ClientConnection(nntpbits.Connection):
         return (int(fields[0]), r)
 
     # -------------------------------------------------------------------------
+    # LIST
+
+    def list(self, what=b'ACTIVE', wildmat=None):
+        what=nntpbits._normalize(what).upper()
+        # Become a reader if necessary
+        if (what not in self.capabilities_list()
+            and b'MODE-READER' in self.capabilites()):
+            self._mode_reader()
+        cmd=[b'LIST', what]
+        if wildmat is not None:
+            cmd.append(nntpbits._normalize(wildmat))
+        code,arg=self.transact(b' '.join(cmd))
+        if code == 215:
+            return self.receive_lines()
+        else:
+            raise Exception("LIST %s command failed: %s" % (what, self.response))
+
+    # -------------------------------------------------------------------------
     # QUIT
 
     def quit(self):

@@ -16,18 +16,28 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 set -e
-SELF="$(dirname "$0")"
+SELF="$(realpath $(dirname "$0"))"
 logdir=$(pwd)
+force=false
+act=true
 while [ $# -gt 0 ]; do
     case "$1" in
         -- )
             shift
             break
             ;;
-        --log )
+        -l | --log )
             shift
             logdir=$1
             shift
+            ;;
+        -f | --force )
+            shift
+            force=true
+            ;;
+        -n | --no-act )
+            shift
+            act=false
             ;;
         -* )
             echo "ERROR: unrecognized option '$1'" >&2
@@ -39,15 +49,33 @@ while [ $# -gt 0 ]; do
     esac
 done
 for path; do
-    if [ -e $path.real ]; then
-        echo "ERROR: $path: already valgrindized" >&2
-        exit 1
+    case "$path" in
+        *.real )
+            continue
+            ;;
+    esac
+    if ! [ -f $path ]; then
+        continue
     fi
-done
-for path; do
-    mv "$path" "$path.real"
-    echo "#! /bin/sh" > "$path"
-    echo "set -" >> "$path"
-    echo "exec valgrind -q --suppressions=$SELF/valgrind-python.supp --num-callers=64 --leak-check=yes --log-file=$logdir/\$(date +%F-%H%M%S).$(basename $path).\$\$.log $path.real \"\$@\"" >> "$path"
-    chmod +x "$path"
+    if [ -e $path.real ]; then
+        echo "WARNING: $path: already valgrindized" >&2
+        continue
+    fi
+    if ! file $path | grep -q ELF.*executable; then
+        if $force; then
+            echo WARNING: valgrindizing $path even thought not ELF >&2
+        else
+            continue
+        fi
+    fi
+    if $act; then
+        mv "$path" "$path.real"
+        realpath=$(realpath "$path.real")
+        echo "#! /bin/sh" > "$path"
+        echo "set -" >> "$path"
+        echo "exec valgrind -q --suppressions=$SELF/valgrind-python.supp --num-callers=64 --leak-check=yes --log-file=$logdir/\$(date +%F-%H%M%S).$(basename $path).\$\$.log $realpath \"\$@\"" >> "$path"
+        chmod +x "$path"
+    else
+        echo $path
+    fi
 done

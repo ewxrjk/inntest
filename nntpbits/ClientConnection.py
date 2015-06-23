@@ -342,12 +342,17 @@ class ClientConnection(nntpbits.Connection):
         if code == 111:
             return arg
         else:
-            raise Exception("DATE comman failed: %s", self.response)
+            raise Exception("DATE command failed: %s", self.response)
 
     # -------------------------------------------------------------------------
     # HELP (3977 7.2)
 
-    #TODO
+    def help(self):
+        code,arg=self.transact(b'HELP')
+        if code == 100:
+            return self.receive_lines()
+        else:
+            raise Exception("HELP command failed: %s", self.response)
 
     # -------------------------------------------------------------------------
     # NEWGROUPS (3977 7.3)

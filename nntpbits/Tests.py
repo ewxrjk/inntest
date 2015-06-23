@@ -358,3 +358,23 @@ class Tests(object):
         delta=abs(t-now)
         if delta > 60:
             raise Exception("DATE: inaccurate clock: %s (at %d)" % (d, now))
+        conn.quit()
+
+    # -------------------------------------------------------------------------
+    # Testing HELP
+
+    def test_help(self):
+        conn=nntpbits.ClientConnection()
+        conn.connect((self.address, self.port))
+        def check(which):
+            lines=conn.help()
+            for line in lines:
+                try:
+                    line.decode()
+                except Exception as e:
+                    raise Exception("HELP: %s response is not valid UTF-8"
+                                    % which)
+        check("first")
+        conn._mode_reader()     # cheating
+        check("second")
+        conn.quit()

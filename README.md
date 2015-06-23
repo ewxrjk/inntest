@@ -19,7 +19,7 @@ Individual Configurations
 -------------------------
 
 A more fine-grained approach is to run `build` to build INN and then
-run indidivual test scripts to install and test with particular
+run individual test scripts to install and test with particular
 configurations.
 
 The test configurations are:

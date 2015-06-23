@@ -56,14 +56,14 @@ Sanitizers
 You can enable sanitizers, if you have a suitable compiler.  Examples:
 
     CC="gcc -fsanitize=address,undefined" \
-      CFLAGS="-g -O1 -fno-optimize-sibling-calls -fno-omit-frame-pointer -fno-sanitize-recover" . \
+      CFLAGS="-g -O1 -fno-optimize-sibling-calls -fno-omit-frame-pointer -fno-sanitize-recover" \
       ./test-all
 
 Note that the build process runs `make check`, so that had better be
 ‘clean’ under your chosen sanitizer options.  It’s likely to be easier
 to debug any issues directly rather than via inntest.
 
-Look in $PREFIX/log/errlog for error log output from innd.
+Look in `$PREFIX/log/errlog` for error log output from innd.
 
 nntpbits Framework
 ------------------

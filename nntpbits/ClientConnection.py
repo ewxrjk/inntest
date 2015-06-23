@@ -184,6 +184,8 @@ class ClientConnection(nntpbits.Connection):
     # -------------------------------------------------------------------------
     # LAST & NEXT (3977 6.1.3-4)
 
+    #TODO
+
     # -------------------------------------------------------------------------
     # ARTICLE, HEAD, BODY (3977 6.2.1-3)
 
@@ -334,7 +336,13 @@ class ClientConnection(nntpbits.Connection):
     # -------------------------------------------------------------------------
     # DATE (3977 7.1)
 
-    #TODO
+    def date(self):
+        self._require_reader()
+        code,arg=self.transact(b'DATE')
+        if code == 111:
+            return arg
+        else:
+            raise Exception("DATE comman failed: %s", self.response)
 
     # -------------------------------------------------------------------------
     # HELP (3977 7.2)

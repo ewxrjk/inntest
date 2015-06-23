@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import nntpbits
-import base64,hashlib,inspect,logging,os,re,struct,threading,time
+import base64,calendar,hashlib,inspect,logging,os,re,struct,threading,time
 
 class TestServer(nntpbits.NewsServer):
     def __init__(self, conncls=nntpbits.ServerConnection):
@@ -329,3 +329,32 @@ class Tests(object):
             if not lines[i].lower().endswith(b':full'):
                 raise Exception("LIST OVERVIEW.FMT: header %d partial: %s"
                                 % (i+1, lines[i]))
+
+    # -------------------------------------------------------------------------
+    # Testing DATE
+
+    def test_date(self):
+        conn=nntpbits.ClientConnection()
+        conn.connect((self.address, self.port))
+        now=int(time.time())
+        d=conn.date()
+        m=re.match(b'^(\\d\\d\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)$',
+                   d)
+        if not m:
+            raise Exception('DATE: malformed response: %s' % d)
+        year=int(m.group(1))
+        month=int(m.group(2))
+        day=int(m.group(3))
+        hour=int(m.group(4))
+        minute=int(m.group(5))
+        second=int(m.group(6))
+        if year < 2015: raise Exception('DATE: implausible year: %s' % d)
+        if month < 1 or month > 12: raise Exception('DATE: bad month: %s' % d)
+        if day < 1 or day > 31: raise Exception('DATE: bad day: %s' % d)
+        if hour > 23: raise Exception('DATE: bad hour: %s' % d)
+        if minute > 59: raise Exception('DATE: bad minute: %s' % d)
+        if second > 59: raise Exception('DATE: bad second: %s' % d)
+        t=calendar.timegm([year, month, day, hour, minute, second])
+        delta=abs(t-now)
+        if delta > 60:
+            raise Exception("DATE: inaccurate clock: %s (at %d)" % (d, now))

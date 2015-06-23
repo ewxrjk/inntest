@@ -74,7 +74,7 @@ class ClientConnection(nntpbits.Connection):
         return self.service
 
     # -------------------------------------------------------------------------
-    # CAPABILITIES
+    # CAPABILITIES (3977 5.2)
 
     def _capabilities(self):
         code,arg=self.transact(b"CAPABILITIES")
@@ -112,7 +112,7 @@ class ClientConnection(nntpbits.Connection):
         return []
 
     # -------------------------------------------------------------------------
-    # MODE READER
+    # MODE READER (3977 5.3)
 
     def _require_reader(self):
         if self.reader is None:
@@ -141,7 +141,116 @@ class ClientConnection(nntpbits.Connection):
         self.capability_list = None
 
     # -------------------------------------------------------------------------
-    # POST & IHAVE
+    # QUIT (3977 5.4)
+
+    def quit(self):
+        """n.quit()
+
+        Disconnect from the server.
+
+        """
+        self.transact(b"QUIT")
+        self.disconnect()
+        self._reset()
+
+    # -------------------------------------------------------------------------
+    # GROUP (3977 6.1.1)
+
+    def group(self, group):
+        """n.group(NAME) -> (count, low, high)
+
+        Selects the group NAME.
+
+        """
+        self._require_reader()
+        group=nntpbits._normalize(group)
+        code,arg=self.transact(b"GROUP " + group)
+        if code == 211:
+            m=_group_re.match(arg)
+            if not m:
+                raise Exception("GROUP response malformed: %s" % self.response)
+            self.current_group=group
+            return (int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        elif code == 411:
+            raise Exception("Group %s does not exist" % str(group))
+        else:
+            raise Exception("GROUP command failed: %s" % self.response)
+
+    # -------------------------------------------------------------------------
+    # LISTGROUP (3977 6.1.2)
+
+    #TODO
+
+    # -------------------------------------------------------------------------
+    # LAST & NEXT (3977 6.1.3-4)
+
+    # -------------------------------------------------------------------------
+    # ARTICLE, HEAD, BODY (3977 6.2.1-3)
+
+    def article(self, ident):
+        """n.article(NUMBER) -> [LINE] | None
+        n.article(ID) -> [LINE] | None
+
+        Retrieves an article by number from the current group, or by
+        message ID specified as a bytes object (or as a string, which
+        will be converted to a bytes object using the ASCII encoding).
+
+        The return value is either a list of lines (as bytes objects,
+        without any line endings) or None if the article does not exist.
+
+        """
+        return self._article(ident, b'ARTICLE', 220)
+
+    def head(self, ident):
+        """n.head(NUMBER) -> [LINE] | None
+        n.head(ID) -> [LINE] | None
+
+        Retrieves the header of an article by number from the current
+        group, or by message ID specified as a bytes object (or as a
+        string, which will be converted to a bytes object using the
+        ASCII encoding).
+
+        The return value is either a list of lines (as bytes objects,
+        without any line endings) or None if the article does not exist.
+
+        """
+        return self._article(ident, b'HEAD', 221)
+
+    def body(self, ident):
+        """n.body(NUMBER) -> [LINE] | None
+        n.body(ID) -> [LINE] | None
+
+        Retrieves the body of an article by number from the current
+        group, or by message ID specified as a bytes object (or as a
+        string, which will be converted to a bytes object using the
+        ASCII encoding).
+
+        The return value is either a list of lines (as bytes objects,
+        without any line endings) or None if the article does not exist.
+
+        """
+        return self._article(ident, b'BODY', 222)
+
+    def _article(self, ident, command, response):
+        self._require_reader()
+        if isinstance(ident, int):
+            ident="%d" % ident
+        code,arg=self.transact(command + b' ' + nntpbits._normalize(ident))
+        if code == response:
+            return self.receive_lines()
+        elif code == 423 or code == 430:
+            return None
+        else:
+            raise Exception("%s command failed: %s"
+                            % (str(command), self.response))
+
+    # -------------------------------------------------------------------------
+    # STAT (3977 6.2.4)
+
+    #TODO
+
+    # -------------------------------------------------------------------------
+    # POST & IHAVE (3977 6.3.1-2)
 
     def post(self, article):
         """n.post(ARTICLE)
@@ -223,121 +332,45 @@ class ClientConnection(nntpbits.Connection):
         return code
 
     # -------------------------------------------------------------------------
-    # GROUP
+    # DATE (3977 7.1)
 
-    def group(self, group):
-        """n.group(NAME) -> (count, low, high)
-
-        Selects the group NAME.
-
-        """
-        self._require_reader()
-        group=nntpbits._normalize(group)
-        code,arg=self.transact(b"GROUP " + group)
-        if code == 211:
-            m=_group_re.match(arg)
-            if not m:
-                raise Exception("GROUP response malformed: %s" % self.response)
-            self.current_group=group
-            return (int(m.group(1)), int(m.group(2)), int(m.group(3)))
-        elif code == 411:
-            raise Exception("Group %s does not exist" % str(group))
-        else:
-            raise Exception("GROUP command failed: %s" % self.response)
+    #TODO
 
     # -------------------------------------------------------------------------
-    # ARTICLE, HEAD, BODY
+    # HELP (3977 7.2)
 
-    def article(self, ident):
-        """n.article(NUMBER) -> [LINE] | None
-        n.article(ID) -> [LINE] | None
+    #TODO
 
-        Retrieves an article by number from the current group, or by
-        message ID specified as a bytes object (or as a string, which
-        will be converted to a bytes object using the ASCII encoding).
+    # -------------------------------------------------------------------------
+    # NEWGROUPS (3977 7.3)
 
-        The return value is either a list of lines (as bytes objects,
-        without any line endings) or None if the article does not exist.
+    #TODO
 
-        """
-        return self._article(ident, b'ARTICLE', 220)
+    # -------------------------------------------------------------------------
+    # NEWNEWS (3977 7.4)
 
-    def head(self, ident):
-        """n.head(NUMBER) -> [LINE] | None
-        n.head(ID) -> [LINE] | None
+    #TODO
 
-        Retrieves the header of an article by number from the current
-        group, or by message ID specified as a bytes object (or as a
-        string, which will be converted to a bytes object using the
-        ASCII encoding).
+    # -------------------------------------------------------------------------
+    # LIST (3977 7.6, 6048)
 
-        The return value is either a list of lines (as bytes objects,
-        without any line endings) or None if the article does not exist.
-
-        """
-        return self._article(ident, b'HEAD', 221)
-
-    def body(self, ident):
-        """n.body(NUMBER) -> [LINE] | None
-        n.body(ID) -> [LINE] | None
-
-        Retrieves the body of an article by number from the current
-        group, or by message ID specified as a bytes object (or as a
-        string, which will be converted to a bytes object using the
-        ASCII encoding).
-
-        The return value is either a list of lines (as bytes objects,
-        without any line endings) or None if the article does not exist.
-
-        """
-        return self._article(ident, b'BODY', 222)
-
-    def _article(self, ident, command, response):
-        self._require_reader()
-        if isinstance(ident, int):
-            ident="%d" % ident
-        code,arg=self.transact(command + b' ' + nntpbits._normalize(ident))
-        if code == response:
+    def list(self, what=b'ACTIVE', wildmat=None):
+        what=nntpbits._normalize(what).upper()
+        # Become a reader if necessary
+        if (what not in self.capabilities_list()
+            and b'MODE-READER' in self.capabilites()):
+            self._mode_reader()
+        cmd=[b'LIST', what]
+        if wildmat is not None:
+            cmd.append(nntpbits._normalize(wildmat))
+        code,arg=self.transact(b' '.join(cmd))
+        if code == 215:
             return self.receive_lines()
-        elif code == 423 or code == 430:
-            return None
         else:
-            raise Exception("%s command failed: %s"
-                            % (str(command), self.response))
+            raise Exception("LIST %s command failed: %s" % (what, self.response))
 
     # -------------------------------------------------------------------------
-    # OVER
-
-    def _list_overview_fmt(self):
-        if b'OVER' in self.capabilities():
-            code,arg=self.transact(b"LIST OVERVIEW.FMT")
-            if code == 215:
-                self.overview_fmt=self.receive_lines()
-                fixups = { b'bytes:': b':bytes', b'lines:': b':lines' }
-                for i in range(0,len(self.overview_fmt)):
-                    l = self.overview_fmt[i].lower()
-                    if len(l) >= 5 and l[-5:] == b':full':
-                        self.overview_fmt[i]=self.overview_fmt[i][:-5]
-                    if l in fixups:
-                        self.overview_fmt[i]=fixups[l]
-            else:
-                self.overview_fmt=[]
-        else:
-            self.overview_fmt=[]
-        return self.overview_fmt
-
-    def list_overview_fmt(self):
-        """n.list_overview_fmt() -> LIST
-
-        Return the list of fields used by the OVER command.
-
-        If the server returns Bytes: or Lines:, these are converted to
-        the RFC3977 values of :bytes and :lines.
-
-        """
-        if self.overview_fmt is None:
-            self._list_overview_fmt()
-        return self.overview_fmt
+    # OVER (3977 8.3, 8.4)
 
     def over(self, low, high):
         """n.over(LOW, HIGH) -> LIST
@@ -389,33 +422,55 @@ class ClientConnection(nntpbits.Connection):
                 r[name]=field[n:]
         return (int(fields[0]), r)
 
-    # -------------------------------------------------------------------------
-    # LIST
-
-    def list(self, what=b'ACTIVE', wildmat=None):
-        what=nntpbits._normalize(what).upper()
-        # Become a reader if necessary
-        if (what not in self.capabilities_list()
-            and b'MODE-READER' in self.capabilites()):
-            self._mode_reader()
-        cmd=[b'LIST', what]
-        if wildmat is not None:
-            cmd.append(nntpbits._normalize(wildmat))
-        code,arg=self.transact(b' '.join(cmd))
-        if code == 215:
-            return self.receive_lines()
+    def _list_overview_fmt(self):
+        if b'OVER' in self.capabilities():
+            code,arg=self.transact(b"LIST OVERVIEW.FMT")
+            if code == 215:
+                self.overview_fmt=self.receive_lines()
+                fixups = { b'bytes:': b':bytes', b'lines:': b':lines' }
+                for i in range(0,len(self.overview_fmt)):
+                    l = self.overview_fmt[i].lower()
+                    if len(l) >= 5 and l[-5:] == b':full':
+                        self.overview_fmt[i]=self.overview_fmt[i][:-5]
+                    if l in fixups:
+                        self.overview_fmt[i]=fixups[l]
+            else:
+                self.overview_fmt=[]
         else:
-            raise Exception("LIST %s command failed: %s" % (what, self.response))
+            self.overview_fmt=[]
+        return self.overview_fmt
 
-    # -------------------------------------------------------------------------
-    # QUIT
+    def list_overview_fmt(self):
+        """n.list_overview_fmt() -> LIST
 
-    def quit(self):
-        """n.quit()
+        Return the list of fields used by the OVER command.
 
-        Disconnect from the server.
+        If the server returns Bytes: or Lines:, these are converted to
+        the RFC3977 values of :bytes and :lines.
 
         """
-        self.transact(b"QUIT")
-        self.disconnect()
-        self._reset()
+        if self.overview_fmt is None:
+            self._list_overview_fmt()
+        return self.overview_fmt
+
+    # -------------------------------------------------------------------------
+    # HDR (3977 8.5, 8.6)
+
+    #TODO
+
+    # -------------------------------------------------------------------------
+    # MODE STREAM (4644 2.3)
+
+    #TODO
+
+    # -------------------------------------------------------------------------
+    # CHECK (4644 2.4)
+
+    #TODO
+
+    # -------------------------------------------------------------------------
+    # TAKETHIS (4644 2.5)
+
+    #TODO
+
+

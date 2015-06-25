@@ -87,6 +87,7 @@ class Tests(object):
         self.localserver=None
         self.timelimit=timelimit
         self.trigger=trigger
+        self.trigger_timeout=5
         self.seed=os.urandom(48)
         self.sequence=0
         self.lock=threading.Lock()
@@ -218,16 +219,19 @@ class Tests(object):
         ident=self._ident(ident)
         with self._local_server() as s:
             do_post(*args, ident=ident, description=description, **kwargs)
-            if self.trigger is not None:
-                logging.info("executing trigger: %s" % self.trigger)
-                rc=os.system(self.trigger)
-                if rc != 0:
-                    logging.error("Trigger wait status: %#04x" % rc)
+            next_trigger=0
             limit=time.time()+self.timelimit
             while time.time() < limit:
                 with s.lock:
                     if ident in s.ihave_submitted:
                         break
+                if (self.trigger is not None
+                       and next_trigger <= time.time()):
+                    logging.info("execute: %s" % self.trigger)
+                    rc=os.system(self.trigger)
+                    if rc != 0:
+                        logging.error("Trigger wait status: %#04x" % rc)
+                    next_trigger=time.time()+self.trigger_timeout
                 time.sleep(0.5)
             if ident not in s.ihave_submitted:
                 raise Exception("article never propagated")

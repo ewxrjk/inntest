@@ -49,6 +49,7 @@ class Tests(object):
 
     Optional keyword arguments:
     group -- newsgroup for testing.  Default local.test
+    hierarchy -- hierarchy for testing.  Default inferred from group.
     email -- email address for test postings.  Default invalid@invalid.invalid
     domain -- domain for message IDs.  Default test.terraraq.uk
     localserver -- address for local server as (address,port) tuple
@@ -68,12 +69,17 @@ class Tests(object):
                  domain=b'test.terraraq.uk',
                  email=b'invalid@invalid.invalid',
                  group=b"local.test",
+                 hierarchy=None,
                  localserver=('*',1119),
                  timelimit=60,
                  trigger=None):
         self.address=address
         self.port=port
         self.group=nntpbits._normalize(group)
+        if hierarchy is None:
+            self.hierarchy=b'.'.join(self.group.split(b'.')[:-1])
+        else:
+            self.hierarchy=nntpbits._normalize(hierarchy)
         self.email=nntpbits._normalize(email)
         self.domain=nntpbits._normalize(domain)
         self.localserveraddress=localserver
@@ -282,7 +288,7 @@ class Tests(object):
     # -------------------------------------------------------------------------
     # Testing LIST
 
-    def test_list(self):
+    def test_list(self, wildmat=None):
         conn=nntpbits.ClientConnection()
         conn.connect((self.address, self.port))
         for kw in conn.capabilities_list():
@@ -290,10 +296,23 @@ class Tests(object):
         if b'MODE-READER' in conn.capabilities():
             conn._mode_reader() # cheating
             for kw in conn.capabilities_list():
-                self._test_list(conn, kw)
+                self._test_list(conn, kw, wildmat)
         # TODO check with nontrivial wildmat
         conn.quit()
 
+    def test_list_wildmat(self, hierarchy=None):
+        if hierarchy is None:
+            hierarchy=self.hierarchy
+        self.test_list(wildmat=hierarchy+b'.*')
+
+    # LIST subcommands that can take a wildmat
+    _list_wildmat=[ b'ACTIVE',
+                    b'ACTIVE.TIMES',
+                    b'NEWSGROUPS',
+                    b'COUNTS',
+                    b'SUBSCRIPTIONS']
+
+    # Regexps that LIST subcommand output must match
     _list_active_re=re.compile(b'^(\\S+) +(\\d+) +(\\d+) +([ynmxj]|=\S+)$')
     _list_active_times_re=re.compile(b'^(\\S+) +(\d+) +(.*)$')
     _list_distrib_pats_re=re.compile(b'^(\\d+):([^:]+):(.*)$')
@@ -306,9 +325,15 @@ class Tests(object):
     _list_motd_re=re.compile(b'')                     # anything goes
     _list_subscriptions_re=re.compile(b'^(\\S+)$')
 
-    def _test_list(self, conn, kw):
+    def _test_list(self, conn, kw, wildmat=None):
+        if wildmat is None:
+            verify=lambda s: True
+        else:
+            if kw not in self._list_wildmat:
+                return
+            verify=Tests._wildmat_to_method(wildmat)
         try:
-            lines=conn.list(kw)
+            lines=conn.list(kw, wildmat)
         except Exception as e:
             # Can't check this one, but not worth failing a test for
             logging.error(e)
@@ -318,8 +343,11 @@ class Tests(object):
         regex=getattr(self, regex_name, None)
         if regex is not None:
             for line in lines:
-                if not regex.match(line):
+                m=regex.match(line)
+                if not m:
                     raise Exception("LIST %s: malformed line: %s" % (kw, line))
+                if not verify(m.group(1)):
+                    raise Exception("LIST %s: malformed group name: %s" % (kw, line))
             return
         method_name='_check_' + name
         method=getattr(self, method_name, None)
@@ -327,7 +355,6 @@ class Tests(object):
             logging.error("don't know how to check LIST %s" % (kw))
         else:
             return method(lines, kw)
-
 
     def _check_list_overview_fmt(self, lines, kw):
         _overview_initial=[b'Subject:',
@@ -349,6 +376,42 @@ class Tests(object):
             if not lines[i].lower().endswith(b':full'):
                 raise Exception("LIST OVERVIEW.FMT: header %d partial: %s"
                                 % (i+1, lines[i]))
+
+    @staticmethod
+    def _wildmat_pattern_to_re(pattern):
+        pos=0
+        regex='^'
+        for ch in pattern:
+            if ch=='*':
+                regex+='.*'
+            elif ch=='?':
+                regex+='.'
+            else:
+                regex+=ch
+        regex+='$'
+        return re.compile(regex)
+
+    @staticmethod
+    def _wildmat_to_method(wildmat):
+        if isinstance(wildmat, bytes):
+            wildmat=str(wildmat, 'UTF-8')
+        elements=[]
+        for pattern in wildmat.split(','):
+            if pattern[0] == '!':
+                sense=False
+                pattern=pattern[1:]
+            else:
+                sense=True
+            elements.append([sense, Tests._wildmat_pattern_to_re(pattern)])
+        def method(s):
+            if isinstance(s, bytes):
+                s=str(s, 'UTF-8')
+            latest=False
+            for sense,regex in elements:
+                if regex.match(s):
+                    latest=sense
+            return latest
+        return method
 
     # -------------------------------------------------------------------------
     # Testing DATE

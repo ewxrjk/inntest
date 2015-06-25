@@ -205,9 +205,13 @@ class Tests(object):
 
         Returns True on success and False on failure.
         """
+        self._check_post_propagates(ident, description, self.test_post)
+
+    def _check_post_propagates(self, ident, description,
+                               do_post, *args, **kwargs):
         ident=self._ident(ident)
         with self._local_server() as s:
-            self.test_post(ident, description)
+            do_post(*args, ident=ident, description=description, **kwargs)
             if self.trigger is not None:
                 logging.info("executing trigger: %s" % self.trigger)
                 rc=os.system(self.trigger)
@@ -225,7 +229,7 @@ class Tests(object):
     # -------------------------------------------------------------------------
     # Testing IHAVE
 
-    def test_ihave(self, ident=None, description=b"ihave test"):
+    def test_ihave(self, ident=None, description=b"ihave test", _pathhost=None):
         """t.test_ihave([ident=IDENT][description=SUBJECT])
 
         Feed a post to the test newsgroup and verifies that the
@@ -241,7 +245,9 @@ class Tests(object):
 
         """
         ident=self._ident(ident)
-        article=[b'Path: ' + self.domain + b'!not-for-mail',
+        if _pathhost is None:
+            _pathhost=self.domain
+        article=[b'Path: ' + _pathhost + b'!not-for-mail',
                  b'Newsgroups: ' + self.group,
                  b'From: ' + self.email,
                  b'Subject: [nntpbits] ' + nntpbits._normalize(description) + b' (ignore)',
@@ -255,10 +261,23 @@ class Tests(object):
         self._check_posted(conn, ident)
         conn.quit()
 
-    # No corresponding test_ihave_propagation, because the normal
-    # configuration would be that the subject server will think
-    # self.domain is our pathhost and therefore not feed it back to
-    # us.
+    def test_ihave_propagates(self, ident=None, description=b'ihave propagation test'):
+        """t.test_ihave_propagates([ident=IDENT][description=SUBJECT])
+
+        Posts to the test newsgroup and verifies that the article
+        propagates to the test server.
+
+        If IDENT is specified then this value will be used as the
+        message ID.
+
+        If DESCRIPTION is specified then it will appear in the subject
+        line.
+
+        Returns True on success and False on failure.
+        """
+        self._check_post_propagates(ident, description,
+                                    self.test_ihave,
+                                    _pathhost=b'nonesuch.' + self.domain)
 
     # -------------------------------------------------------------------------
     # Testing LIST

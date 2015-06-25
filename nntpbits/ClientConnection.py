@@ -337,6 +337,12 @@ class ClientConnection(nntpbits.Connection):
     # DATE (3977 7.1)
 
     def date(self):
+        """n.date() -> DATE
+
+        Return the server's idea of the current date.
+        The result is a bytes object in the form YYMMDDHHMMSS.
+
+        """
         self._require_reader()
         code,arg=self.transact(b'DATE')
         if code == 111:
@@ -348,6 +354,11 @@ class ClientConnection(nntpbits.Connection):
     # HELP (3977 7.2)
 
     def help(self):
+        """n.help() -> LIST
+
+        Returns the server's help output.
+
+        """
         code,arg=self.transact(b'HELP')
         if code == 100:
             return self.receive_lines()
@@ -368,6 +379,16 @@ class ClientConnection(nntpbits.Connection):
     # LIST (3977 7.6, 6048)
 
     def list(self, what=b'ACTIVE', wildmat=None):
+        """n.list(WHAT) -> LIST
+        n.list(WHAT, WILDMAT) -> LIST
+
+        Issues a LIST command.  WHAT should be 'ACTIVE', 'NEWSGROUPS', etc.
+        WILDMAT is optional and limits the output.  See RFC3977 s4 for
+        syntax.
+
+        The return value is a list of bytes objects.
+
+        """
         what=nntpbits._normalize(what).upper()
         # Become a reader if necessary
         if (what not in self.capabilities_list()

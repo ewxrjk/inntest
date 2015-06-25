@@ -270,7 +270,7 @@ class Tests(object):
     def test_ihave_propagates(self, ident=None, description=b'ihave propagation test'):
         """t.test_ihave_propagates([ident=IDENT][description=SUBJECT])
 
-        Posts to the test newsgroup and verifies that the article
+        Feed a post to the test newsgroup and verifies that the article
         propagates to the test server.
 
         If IDENT is specified then this value will be used as the
@@ -289,6 +289,15 @@ class Tests(object):
     # Testing LIST
 
     def test_list(self, wildmat=None):
+        """t.test_list()
+
+        Tests the LIST command.
+
+        Uses CAPABILITIES to enumerate all the LIST subcommands
+        supported and verifies that their output follows the right
+        syntax.  Then (if possible) switches to reader mode and
+        repeats the exercise.
+        """
         conn=nntpbits.ClientConnection()
         conn.connect((self.address, self.port))
         for kw in conn.capabilities_list():
@@ -301,6 +310,16 @@ class Tests(object):
         conn.quit()
 
     def test_list_wildmat(self, hierarchy=None):
+        """t.test_list_wildmat()
+
+        Tests the LIST command with wildmats
+
+        Uses CAPABILITIES to enumerate all the LIST subcommands
+        supported and, for those that can accept a wildmat argument,
+        verifies that their output follows the right syntax.  Then (if
+        possible) switches to reader mode and repeats the exercise.
+
+        """
         if hierarchy is None:
             hierarchy=self.hierarchy
         self.test_list(wildmat=hierarchy+b'.*')
@@ -417,6 +436,14 @@ class Tests(object):
     # Testing DATE
 
     def test_date(self):
+        """t.test_date()
+
+        Tests the DATE command.
+
+        As well as checking the syntax, verifies that the server's
+        clock is reasonably accurate.
+
+        """
         conn=nntpbits.ClientConnection()
         conn.connect((self.address, self.port))
         now=int(time.time())
@@ -447,6 +474,11 @@ class Tests(object):
     # Testing HELP
 
     def test_help(self):
+        """t.test_help()
+
+        Tests the HELP command.
+
+        """
         conn=nntpbits.ClientConnection()
         conn.connect((self.address, self.port))
         def check(which):

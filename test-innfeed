@@ -32,6 +32,10 @@ peer ${DOMAIN} {
   ip-name: localhost
   port-number: ${LOCALPORT}
 }
+
+initial-sleep: 0
+initial-reconnect-time:         1
+max-reconnect-time:             1
 EOF
 
 ${REALLY} sh -c "cat >> $PREFIX/etc/newsfeeds" <<EOF

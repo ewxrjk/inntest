@@ -75,7 +75,7 @@ class Tests(object):
         self.port=port
         self.group=nntpbits._normalize(group)
         self.email=nntpbits._normalize(email)
-        self.domain=b'test.terraraq.uk'
+        self.domain=nntpbits._normalize(domain)
         self.localserveraddress=localserver
         self.localserverclass=TestServer
         self.localserver=None

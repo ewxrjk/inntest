@@ -23,7 +23,9 @@ from nntpbits.Tests import *
 import threading,time
 
 def _normalize(s):
-    if isinstance(s, str):
+    if isinstance(s, list):
+        return [_normalize(line) for line in s]
+    if not isinstance(s, bytes):
         return bytes(s, 'ascii')
     else:
         return s

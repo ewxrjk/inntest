@@ -273,7 +273,7 @@ class ClientConnection(nntpbits.Connection):
 
         """
         self._require_reader()
-        self._post(article, b'POST', None, 340, 240)
+        return self._post(article, b'POST', None, 340, 240)
 
     def ihave(self, article, ident=None):
         """n.ihave(ARTICLE[, IDENT])
@@ -298,7 +298,6 @@ class ClientConnection(nntpbits.Connection):
         instead.
 
         """
-        ident=nntpbits._normalize(ident)
         if ident is None:
             if isinstance(article, bytes):
                 article=article.splitlines()
@@ -309,6 +308,8 @@ class ClientConnection(nntpbits.Connection):
                 if m:
                     ident=m.group(1)
                     break
+        else:
+            ident=nntpbits._normalize(ident)
         if ident is None:
             raise Exception("failed to extract message ID from article")
         return self._post(article, b'IHAVE', ident, 335, 235)

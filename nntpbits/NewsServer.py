@@ -69,7 +69,7 @@ class NewsServer(object):
                 except nntpbits._Stop:
                     logging.debug("%x: client stopped %s"
                                   % (threading.get_ident(), a))
-                except Exception as e:
+                except BaseException as e:
                     logging.error("%x: client error: %s %s"
                                   % (threading.get_ident(), e, a))
                     logging.error("%x: %s"
@@ -118,10 +118,12 @@ class NewsServer(object):
                     logging.info("%x: listener started %s"
                                  % (threading.get_ident(), sockaddr))
                     self.listen_socket(s, daemon=daemon)
+                    logging.info("%x: listener returned"
+                                 % (threading.get_ident()))
                 except nntpbits._Stop:
                     logging.debug("%x: listener stopped %s"
                                   % (threading.get_ident(), sockaddr))
-                except Exception as e:
+                except BaseException as e:
                     logging.error("%x: listener error %s %s"
                                   % (threading.get_ident(), e, sockaddr))
                     logging.error("%x: %s"

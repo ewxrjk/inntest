@@ -191,7 +191,7 @@ class Tests(object):
         if article_posted is None:
             raise Exception("article cannot be retrieved from group")
 
-    def test_post_propagates(self, ident=None, description=b'propagation test'):
+    def test_post_propagates(self, ident=None, description=b'posting propagation test'):
         """t.test_post_propagates([ident=IDENT][description=SUBJECT])
 
         Posts to the test newsgroup and verifies that the article
@@ -209,7 +209,7 @@ class Tests(object):
         with self._local_server() as s:
             self.test_post(ident, description)
             if self.trigger is not None:
-                logging.debug("executing trigger")
+                logging.info("executing trigger: %s" % self.trigger)
                 rc=os.system(self.trigger)
                 if rc != 0:
                     logging.error("Trigger wait status: %#04x" % rc)
@@ -218,6 +218,7 @@ class Tests(object):
                 with s.lock:
                     if ident in s.ihave_submitted:
                         break
+                time.sleep(0.5)
             if ident not in s.ihave_submitted:
                 raise Exception("article never propagated")
 

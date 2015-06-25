@@ -76,5 +76,7 @@ def stop():
     while True:
         with outstanding_lock:
             if outstanding == 0:
-                return
+                break
         time.sleep(0.125)
+    with stopping_lock:
+        stopping=False

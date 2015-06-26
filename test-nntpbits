@@ -26,4 +26,4 @@ echo "=== $0 $1 ==="
 ./tests.py ${DEBUG} \
            -s "${SERVER}" -p "${PORT}" \
            -g "${GROUP}" -D "${DOMAIN}" -l "${LOCALPORT}" \
-           -T "./trigger"
+           -T "./trigger" "$@"

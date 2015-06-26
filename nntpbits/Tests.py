@@ -547,3 +547,45 @@ class Tests(object):
         conn._mode_reader()     # cheating
         check("second")
         conn.quit()
+
+    # -------------------------------------------------------------------------
+    # Testing CAPABILTIES
+
+    def test_capabilities(self):
+        """t.test_capabilites()
+
+        Tests the CAPABILITIES command.
+
+        """
+        conn=nntpbits.ClientConnection()
+        conn.connect((self.address, self.port))
+        def check(which):
+            cap = conn.capabilities()
+            if len(cap) == 0:
+                raise Exception("CAPABILITIES: %s response empty/missing"
+                                % which)
+            if cap[0] != b'VERSION 2':
+                raise Exception("CAPABILITIES: %s: bogus version: %s"
+                                % (which, cap[0]))
+            if b'READER' in cap:
+                lcaps = conn.capabilities_list()
+                if not b'ACTIVE' in lcaps:
+                    raise Exception("CAPABILITIES: %s: READER but no LIST ACTIVE"
+                                    % which)
+                if not b'NEWSGROUPS' in lcaps:
+                    raise Exception("CAPABILITIES: %s: READER but no LIST NEWSGROUPS"
+                                    % which)
+            if b'OVER' in cap:
+                if not b'READER' in cap:
+                    raise Exception("CAPABILITIES: %s: OVER but no READER"
+                                    % which)
+                if not b'OVERVIEW.FMT' in conn.capabilities_list():
+                    raise Exception("CAPABILITIES: %s: OVER but no LIST OVERVIEW.FMT"
+                                    % which)
+        check("first")
+        if b'MODE-READER' in conn.capabilities():
+            conn._mode_reader()     # cheating
+            if not b'READER' in conn.capabilities():
+                raise Exception("CAPABILITIES: no READER after MODE READER")
+            check("second")
+        conn.quit()

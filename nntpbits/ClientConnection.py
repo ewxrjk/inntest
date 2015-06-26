@@ -262,6 +262,8 @@ class ClientConnection(nntpbits.Connection):
         """
         return self._article(ident, b'BODY', 222)
 
+    _stat_re=re.compile(b'^\\d+ +(<[^>]+>)( +.*)?$')
+
     def _article(self, ident, command, response):
         """n._article(NUMBER|ID, COMMAND, RESPONSE) -> LINES
 
@@ -275,7 +277,14 @@ class ClientConnection(nntpbits.Connection):
             ident="%d" % ident
         code,arg=self.transact(command + b' ' + nntpbits._normalize(ident))
         if code == response:
-            return self.receive_lines()
+            if code == 223:
+                m=ClientConnection._stat_re.match(arg)
+                if not m:
+                    raise Exception("%s command malformed response: %s"
+                            % (str(command), arg))
+                return m.group(1)
+            else:
+                return self.receive_lines()
         elif code == 423 or code == 430:
             return None
         else:
@@ -285,7 +294,20 @@ class ClientConnection(nntpbits.Connection):
     # -------------------------------------------------------------------------
     # STAT (3977 6.2.4)
 
-    #TODO
+    def stat(self, ident):
+        """n.stat(NUMBER) -> ID | None
+        n.stat(ID) -> ID | None
+
+        Tests the presence of an article by number from the current
+        group, or by message ID specified as a bytes object (or as a
+        string, which will be converted to a bytes object using the
+        ASCII encoding).
+
+        The return value is the message ID if the article exists and
+        None otherwise.
+
+        """
+        return self._article(ident, b'STAT', 223)
 
     # -------------------------------------------------------------------------
     # POST & IHAVE (3977 6.3.1-2)

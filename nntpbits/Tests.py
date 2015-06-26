@@ -593,3 +593,172 @@ class Tests(object):
                 raise Exception("CAPABILITIES: no READER after MODE READER")
             check("second")
         conn.quit()
+
+    # -------------------------------------------------------------------------
+    # Testing ARTICLE
+
+    def test_article_id(self):
+        """t.test_article_id()
+
+        Test article lookup by <message id>.
+
+        """
+        self._test_article_id('article', Tests._parse_article)
+
+    def test_head_id(self):
+        """t.test_header_id()
+
+        Test article header lookup by <message id>.
+
+        """
+        self._test_article_id('head', Tests._parse_article)
+
+    def test_body_id(self):
+        """t.test_body_id()
+
+        Test article body lookup by <message id>.
+
+        """
+        self._test_article_id('body',
+                              lambda body: (None, body, None))
+
+    def test_stat_id(self):
+        """t.test_stat_id()
+
+        Test article check by <message id>.
+
+        """
+        self._test_article_id('stat',
+                              lambda ident: (None, None, ident))
+
+    def _test_article_id(self, cmd, parse):
+        conn=nntpbits.ClientConnection()
+        method=getattr(conn, cmd)
+        conn.connect((self.address, self.port))
+        articles=self._post_articles(conn)
+        for ident,article in articles:
+            header,body,_=Tests._parse_article(article)
+            r=method(ident)
+            r_header,r_body,r_ident=parse(r)
+            # Ident should match
+            if r_ident is not None:
+                logging.debug("%s <-> %s" % (ident, r_ident))
+                if r_ident != ident:
+                    raise Exception("%s: ID mismatch (%s vs %s)"
+                                    % (cmd, ident, r_ident))
+            # Headers we supplied should match
+            if r_header is not None:
+                for field in header:
+                    if field not in r_header:
+                        raise Exception("%s: missing %s header"
+                                        % (cmd, field))
+                    value=header[field]
+                    r_value=r_header[field]
+                    logging.debug("%s: %s <-> %s" % (field, value, r_value))
+                    if r_value != value:
+                        raise Exception("%s: non-matching %s header: '%s' vs '%s'"
+                                        % (cmd, field, value, r_value))
+            # Body should match
+            if r_body is not None:
+                if body != r_body:
+                    raise Exception("%s: non-matching body: '%s' vs '%s'"
+                                        % (cmd, body, r_body))
+        conn.quit()
+
+    _header_re=re.compile(b'^([a-zA-Z0-9\\-]+):\\s+(.*)$')
+
+    @staticmethod
+    def _parse_article(article):
+        """Tests._parse_article(ARTICLE) -> HEADER,BODY,IDENT
+
+        Parses an article (as a list of bytes objects) into the header
+        (a dict mapping lower-cases bytes header names to values), a
+        body (a list of bytes objects) and the message ID.
+
+        The body and/or message ID are None if missing.
+
+        """
+        header={}
+        field=None
+        body=None
+        for line in article:
+            if body is not None:
+                body.append(line)
+                continue
+            if line==b'':
+                body=[]
+                continue
+            if line[0:1] in b' \t':
+                if field is None:
+                    raise Exception("Malformed article: %s" % article)
+                header[field]+=b'\n'+line
+                continue
+            m=Tests._header_re.match(line)
+            if not m:
+                raise Exception("Malformed article: %s" % article)
+            field=m.group(1).lower()
+            header[field]=m.group(2)
+        return header,body,header[b'message-id']
+
+    def _post_articles(self, conn):
+        """t._post_articles(CONN)
+
+        Post some articles for test purposes.
+
+        """
+        articles=[]
+        ident=self._ident()
+        article=[b'Newsgroups: ' + self.group,
+                 b'From: ' + self.email,
+                 b'Subject: [nntpbits] articles-simple (ignore)',
+                 b'Message-ID: ' + ident,
+                 b'',
+                 self._unique()]
+        conn.post(article)
+        articles.append([ident, article])
+
+        ident=self._ident()
+        article=[b'Newsgroups: ' + self.group,
+                 b'From: ' + self.email,
+                 b'Subject: [nntpbits] articles-keywords (ignore)',
+                 b'Message-ID: ' + ident,
+                 b'Keywords: this, that, the other',
+                 b'',
+                 self._unique()]
+        conn.post(article)
+        articles.append([ident, article])
+
+        ident=self._ident()
+        article=[b'Newsgroups: ' + self.group,
+                 b'From: ' + self.email,
+                 b'Subject: [nntpbits] articles-date (ignore)',
+                 b'Message-ID: ' + ident,
+                 b'Date: ' + self._date(),
+                 b'',
+                 self._unique()]
+        conn.post(article)
+        articles.append([ident, article])
+
+        ident=self._ident()
+        article=[b'Newsgroups: ' + self.group,
+                 b'From: ' + self.email,
+                 b'Subject: [nntpbits] articles-organization (ignore)',
+                 b'Message-ID: ' + ident,
+                 b'Organization: ' + self._unique(),
+                 b'',
+                 self._unique()]
+        conn.post(article)
+        articles.append([ident, article])
+
+        ident=self._ident()
+        article=[b'Newsgroups: ' + self.group,
+                 b'From: ' + self.email,
+                 b'Subject: [nntpbits] articles-user-agent (ignore)',
+                 b'Message-ID: ' + ident,
+                 b'User-Agent: test.terraraq.uk',
+                 b'',
+                 self._unique()]
+        conn.post(article)
+        articles.append([ident, article])
+
+        return articles

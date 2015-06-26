@@ -344,13 +344,15 @@ class Tests(object):
         """
         conn=nntpbits.ClientConnection()
         conn.connect((self.address, self.port))
-        for kw in conn.capabilities_list():
-            self._test_list(conn, kw)
+        def check():
+            for kw in conn.capabilities_list():
+                self._test_list(conn, kw)
+            if b'ACTIVE' in conn.capabilities_list():
+                self._test_list(conn, None)
+        check()
         if b'MODE-READER' in conn.capabilities():
             conn._mode_reader() # cheating
-            for kw in conn.capabilities_list():
-                self._test_list(conn, kw, wildmat)
-        # TODO check with nontrivial wildmat
+            check()
         conn.quit()
 
     def test_list_wildmat(self, hierarchy=None):
@@ -411,6 +413,8 @@ class Tests(object):
             # Can't check this one, but not worth failing a test for
             logging.error(e)
             return
+        if kw is None:
+            kw=b'ACTIVE'
         name='list_'+str(kw, 'ascii').replace('.', '_').lower()
         regex_name='_'+name+'_re'
         regex=getattr(self, regex_name, None)

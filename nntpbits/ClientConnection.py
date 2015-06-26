@@ -437,14 +437,22 @@ class ClientConnection(nntpbits.Connection):
         The return value is a list of bytes objects.
 
         """
-        what=nntpbits._normalize(what).upper()
+        if what is None:
+            cap=b'ACTIVE'
+        else:
+            what=nntpbits._normalize(what).upper()
+            cap=what
         # Become a reader if necessary
-        if (what not in self.capabilities_list()
+        if (cap not in self.capabilities_list()
             and b'MODE-READER' in self.capabilites()):
             self._mode_reader()
-        cmd=[b'LIST', what]
-        if wildmat is not None:
-            cmd.append(nntpbits._normalize(wildmat))
+        if what is None:
+            cmd=[b'LIST']
+            assert wildmat is None
+        else:
+            cmd=[b'LIST', what]
+            if wildmat is not None:
+                cmd.append(nntpbits._normalize(wildmat))
         code,arg=self.transact(b' '.join(cmd))
         if code == 215:
             return self.receive_lines()

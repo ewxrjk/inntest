@@ -17,9 +17,12 @@
 import nntpbits
 import logging,re,socket,threading
 
+# Regexp matching a command
 _command_re=re.compile(b"^(\S+)\s*(.*)$")
+# Regexp matching a message ID
 _message_id_re=re.compile(b'^<[^@]+@[^@]+>$')
 
+# Text for standard response codes
 _responses={
     100: 'Help text follows',
     101: 'Capabilities follow',
@@ -95,6 +98,11 @@ class ServerConnection(nntpbits.Connection):
                            b"IMPLEMENTATION inntest"]
 
     def _reset(self):
+        """s._reset()
+
+        Reset object state.
+
+        """
         self.finished=False
 
     def connected(self):

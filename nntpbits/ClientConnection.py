@@ -34,6 +34,11 @@ class ClientConnection(nntpbits.Connection):
         self._reset()
 
     def _reset(self):
+        """n._reset()
+
+        Reset the state of this connection.
+
+        """
         self.service=None
         self.posting=None
         self.reader=None
@@ -54,6 +59,12 @@ class ClientConnection(nntpbits.Connection):
                                              source_address))
 
     def connected(self):
+        """n.connected()
+
+        Called when the files() or socket() method is used to
+        establish IO.
+
+        """
         code,arg=self.wait()
         # 3977 5.1.1
         if code == 200:
@@ -77,6 +88,13 @@ class ClientConnection(nntpbits.Connection):
     # CAPABILITIES (3977 5.2)
 
     def _capabilities(self):
+        """n._capabilities() -> LIST
+
+        Retrieve the server's capabilities.  If it does not support
+        the command an empty list is returned.  (This might be changed
+        in the future.)
+
+        """
         code,arg=self.transact(b"CAPABILITIES")
         if code == 101:
             self.capability_list=self.receive_lines()
@@ -115,6 +133,11 @@ class ClientConnection(nntpbits.Connection):
     # MODE READER (3977 5.3)
 
     def _require_reader(self):
+        """n._require_reader()
+
+        Issues the MODE READER command if it is necessary.
+
+        """
         if self.reader is None:
             self.capabilities()
             if b"READER" in self.capability_list:
@@ -129,6 +152,12 @@ class ClientConnection(nntpbits.Connection):
             raise Exception("NNTP reader support unavailable")
 
     def _mode_reader(self):
+        """n._mode_reader()
+
+        Issues the MODE READER command.
+        Resets the cached capability list if it succeeds.
+
+        """
         code,arg=self.transact(b"MODE READER")
         if code == 200:
             self.reader=True
@@ -234,6 +263,13 @@ class ClientConnection(nntpbits.Connection):
         return self._article(ident, b'BODY', 222)
 
     def _article(self, ident, command, response):
+        """n._article(NUMBER|ID, COMMAND, RESPONSE) -> LINES
+
+        Issues COMMAND to retrieve the identified article.  RESPONSE
+        should be the positive response code to expect.  Returns None
+        if the article doesn't exist.
+
+        """
         self._require_reader()
         if isinstance(ident, int):
             ident="%d" % ident
@@ -315,6 +351,17 @@ class ClientConnection(nntpbits.Connection):
         return self._post(article, b'IHAVE', ident, 335, 235)
 
     def _post(self, article, command, ident, initial_response, ok_response):
+        """n._post(ARTICLE, COMMAND, IDENT, INITIAL_RESPONSE, OK_RESPONSE) -> CODE
+
+        Post or transfer an article.
+
+        ARTICLE is the article to send and COMMAND is the command to
+        use.  IDENT should be its message ID or None.
+
+        INITIAL_RESPONSE and OK_RESPONSE give the positive responses
+        to check for in the two phases of the posting process.
+
+        """
         article=nntpbits._normalize(article)
         if isinstance(article, bytes):
             article=article.splitlines()
@@ -458,6 +505,12 @@ class ClientConnection(nntpbits.Connection):
         return (int(fields[0]), r)
 
     def _list_overview_fmt(self):
+        """n._list_overview_fmt() -> LIST
+
+        Retrieves the overview format data, or an empty list if it
+        cannot be retrieved.
+
+        """
         if b'OVER' in self.capabilities():
             code,arg=self.transact(b"LIST OVERVIEW.FMT")
             if code == 215:

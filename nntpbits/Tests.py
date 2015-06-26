@@ -18,6 +18,10 @@ import nntpbits
 import base64,calendar,hashlib,inspect,logging,os,re,struct,threading,time
 
 class TestServer(nntpbits.NewsServer):
+    """nntpbits.TestServer() -> SERVER
+
+    News server class that accepts all articles fed to it.
+    """
     def __init__(self, conncls=nntpbits.ServerConnection):
         nntpbits.NewsServer.__init__(self, conncls=conncls)
         self.ihave_checked=[]
@@ -93,6 +97,12 @@ class Tests(object):
         self.lock=threading.Lock()
 
     def _unique(self):
+        """t._unique() -> BYTES
+
+        Returns a unique (but not necessarily unpredictable) string.
+        This is used for picking message IDs.
+
+        """
         with self.lock:
             sequence=self.sequence
             self.sequence+=1
@@ -102,12 +112,24 @@ class Tests(object):
         return base64.b64encode(h.digest())
 
     def _ident(self, ident=None):
+        """t._ident([IDENT]) -> IDENT
+
+        Returns a message ID.  If IDENT is None, one is picked;
+        otherwise IDENT is used.
+
+        """
         if ident is None:
             return b'<' + self._unique() + b'@' + self.domain + b'>'
         else:
             return nntpbits._normalize(ident)
 
     def _date(self):
+        """t._date() -> BYTES
+
+        Returns the data in a format suitable for use in news
+        articles.
+
+        """
         return bytes(time.strftime("%a, %d %b %Y %H:%M:%S +0000",
                                    time.gmtime()),
                      'ascii')
@@ -142,6 +164,12 @@ class Tests(object):
     # Local server support
 
     def _local_server(self):
+        """s._local_server() -> SERVER
+
+        Create an nntpbits.TestServer and bind it to the local server
+        address.  This is used by propagation tests.
+
+        """
         self.localserver=TestServer()
         self.localserver.listen_address(self.localserveraddress[0],
                                         self.localserveraddress[1],
@@ -181,6 +209,12 @@ class Tests(object):
         conn.quit()
 
     def _check_posted(self, conn, ident):
+        """s._check_posted(CONN, IDENT)
+
+        Look for the article IDENT in the test group, using
+        CONN as the client connection.
+
+        """
         article_posted=conn.article(ident)
         if article_posted is None:
             raise Exception("article cannot be retrieved by message-ID")
@@ -216,6 +250,12 @@ class Tests(object):
 
     def _check_post_propagates(self, ident, description,
                                do_post, *args, **kwargs):
+        """t._check_post_propagates(IDENT, DESCRIPTION, DO_POST, ...)
+
+        Call do_post(ident=IDENT, description=DESCRIPTION, ..) to post
+        a message and then verify it is fed back to us.
+
+        """
         ident=self._ident(ident)
         with self._local_server() as s:
             do_post(*args, ident=ident, description=description, **kwargs)
@@ -336,6 +376,8 @@ class Tests(object):
                     b'SUBSCRIPTIONS']
 
     # Regexps that LIST subcommand output must match
+    # For subcommands that can take a wildmat, first capture
+    # group is newsgroup name.
     _list_active_re=re.compile(b'^(\\S+) +(\\d+) +(\\d+) +([ynmxj]|=\S+)$')
     _list_active_times_re=re.compile(b'^(\\S+) +(\d+) +(.*)$')
     _list_distrib_pats_re=re.compile(b'^(\\d+):([^:]+):(.*)$')
@@ -349,6 +391,14 @@ class Tests(object):
     _list_subscriptions_re=re.compile(b'^(\\S+)$')
 
     def _test_list(self, conn, kw, wildmat=None):
+        """t._test_list(CONN, KW, [WILDMAT])
+
+        Test a LIST subcommand on connection CONN.
+
+        KW is the subcommand and WILDMAT is an optional wildmat
+        pattern to supply.
+
+        """
         if wildmat is None:
             verify=lambda s: True
         else:

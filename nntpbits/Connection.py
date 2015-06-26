@@ -18,6 +18,7 @@
 import logging,re,select,socket
 import nntpbits
 
+# Regexp parsing a response
 _parse_re=re.compile(b"^([0-9]{3}) (.*)$")
 
 class Connection(object):
@@ -53,6 +54,9 @@ class Connection(object):
         """p.socket(SOCKET)
 
         Use a connected socket SOCKET for IO.
+
+        Ownership of the socket passes to the connection; it will be
+        closed when the connection is destroyed.
 
         """
         self.sock=s
@@ -103,6 +107,12 @@ class Connection(object):
         self.send_line(b'.')
 
     def _fill(self):
+        """p._fill() -> READABLE
+
+        Attempts to fill the input buffer.  Returns True if bytes were
+        read (or EOF was reached) and False otherwise.
+
+        """
         if self.buffer_index < len(self.buffer):
             return True
         try:
@@ -125,10 +135,25 @@ class Connection(object):
             return False
 
     def _maybe_stop(self):
+        """p._maybe_stop()
+
+        Invoke nntpbits._maybe_stop(), to potentially terminate the
+        current threading, if this is a stoppable connection.
+
+        """
         if self.stoppable:
             nntpbits._maybe_stop()
 
     def _read_byte(self):
+        """p._read_byte() -> BYTE
+
+        Returns the next input byte, or None at EOF.
+
+        This method blocks until it can meet its contract.  It may
+        throw an exception if the thread is told to stop or an error
+        occurs.
+
+        """
         while self.buffer_index >= len(self.buffer):
             while not self._fill():
                 select.select([self.sock],[],[],1.0)
@@ -161,6 +186,12 @@ class Connection(object):
         return line
 
     def _complete(self, line):
+        """self._complete(LINE) -> BOOL
+
+        Returns True if LINE is a complete line according to the
+        connection's end-of-line property.
+
+        """
         return len(line) >= len(self.eol) and line[-len(self.eol):] == self.eol
 
     def receive_lines(self):

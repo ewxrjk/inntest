@@ -34,13 +34,12 @@ def main(argv):
     post(r.server, r.port, article, r.ihave)
 
 def post(server, port, article, ihave):
-    client=nntpbits.ClientConnection()
-    client.connect((server, port))
-    if ihave:
-        client.ihave(article)
-    else:
-        client.post(article)
-    client.quit()
+    with nntpbits.ClientConnection((server, port)) as client:
+        client.connect()
+        if ihave:
+            client.ihave(article)
+        else:
+            client.post(article)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

@@ -32,18 +32,17 @@ def main(argv):
     dump_group(r.server, r.port, r.GROUP)
 
 def dump_group(server, port, group):
-    client=nntpbits.ClientConnection((server,port))
-    (count, low, high)=client.group(group)
-    linesep=bytes(os.linesep, 'ascii')
-    for number in range(low, high+1):
-        _,_,article=client.article(number)
-        if article is not None:
-            with open("%s:%d" % (group,number), "wb") as f:
-                for line in article:
-                    f.write(line)
-                    f.write(linesep)
-                f.flush()
-    client.quit()
+    with nntpbits.ClientConnection((server,port)) as client:
+        (count, low, high)=client.group(group)
+        linesep=bytes(os.linesep, 'ascii')
+        for number in range(low, high+1):
+            _,_,article=client.article(number)
+            if article is not None:
+                with open("%s:%d" % (group,number), "wb") as f:
+                    for line in article:
+                        f.write(line)
+                        f.write(linesep)
+                    f.flush()
 
 if __name__ == '__main__':
     main(sys.argv[1:])

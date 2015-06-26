@@ -34,6 +34,10 @@ class ClientConnection(nntpbits.Connection):
     Alternatively call the connect() method to actually establish a
     connection.
 
+    A ClientConnection may be used as a context manager.  If the
+    connection is still live on exit from the suite, a QUIT command is
+    automatically issued.
+
     """
     def __init__(self, address=None, timeout=None, source_address=None,
                  stoppable=False):
@@ -41,6 +45,15 @@ class ClientConnection(nntpbits.Connection):
         self._reset()
         if address is not None:
             self.connect(address, timeout, source_address)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, et, ev, etb):
+        logging.debug("ClientConnection.__exit__: %s / %s / %s" % (et, ev, etb))
+        if self.r is not None or self.w is not None:
+            self.quit()
+        return False
 
     def _reset(self):
         """n._reset()

@@ -33,6 +33,7 @@ class TestServer(nntpbits.NewsServer):
     def __exit__(self, et, ev, etb):
         logging.debug("TestServer.__exit__: %s / %s / %s" % (et, ev, etb))
         nntpbits.stop()
+        return False
 
     def ihave_check(self, ident):
         with self.lock:
@@ -202,10 +203,9 @@ class Tests(object):
                  b'Message-ID: ' + ident,
                  b'',
                  b'nntpbits.Test test posting']
-        conn=nntpbits.ClientConnection((self.address, self.port))
-        conn.post(article)
-        self._check_posted(conn, ident)
-        conn.quit()
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn.post(article)
+            self._check_posted(conn, ident)
 
     def _check_posted(self, conn, ident):
         """s._check_posted(CONN, IDENT)
@@ -304,10 +304,9 @@ class Tests(object):
                  b'Date: ' + self._date(),
                  b'',
                  b'nntpbits.Test test posting']
-        conn=nntpbits.ClientConnection((self.address, self.port))
-        conn.ihave(article)
-        self._check_posted(conn, ident)
-        conn.quit()
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn.ihave(article)
+            self._check_posted(conn, ident)
 
     def test_ihave_propagates(self, ident=None, description=b'ihave propagation test'):
         """t.test_ihave_propagates([ident=IDENT][description=SUBJECT])
@@ -340,17 +339,16 @@ class Tests(object):
         syntax.  Then (if possible) switches to reader mode and
         repeats the exercise.
         """
-        conn=nntpbits.ClientConnection((self.address, self.port))
-        def check():
-            for kw in conn.capabilities_list():
-                self._test_list(conn, kw)
-            if b'ACTIVE' in conn.capabilities_list():
-                self._test_list(conn, None)
-        check()
-        if b'MODE-READER' in conn.capabilities():
-            conn._mode_reader() # cheating
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            def check():
+                for kw in conn.capabilities_list():
+                    self._test_list(conn, kw)
+                if b'ACTIVE' in conn.capabilities_list():
+                    self._test_list(conn, None)
             check()
-        conn.quit()
+            if b'MODE-READER' in conn.capabilities():
+                conn._mode_reader() # cheating
+                check()
 
     def test_list_wildmat(self, hierarchy=None):
         """t.test_list_wildmat()
@@ -499,30 +497,29 @@ class Tests(object):
         clock is reasonably accurate.
 
         """
-        conn=nntpbits.ClientConnection((self.address, self.port))
-        now=int(time.time())
-        d=conn.date()
-        m=re.match(b'^(\\d\\d\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)$',
-                   d)
-        if not m:
-            raise Exception('DATE: malformed response: %s' % d)
-        year=int(m.group(1))
-        month=int(m.group(2))
-        day=int(m.group(3))
-        hour=int(m.group(4))
-        minute=int(m.group(5))
-        second=int(m.group(6))
-        if year < 2015: raise Exception('DATE: implausible year: %s' % d)
-        if month < 1 or month > 12: raise Exception('DATE: bad month: %s' % d)
-        if day < 1 or day > 31: raise Exception('DATE: bad day: %s' % d)
-        if hour > 23: raise Exception('DATE: bad hour: %s' % d)
-        if minute > 59: raise Exception('DATE: bad minute: %s' % d)
-        if second > 59: raise Exception('DATE: bad second: %s' % d)
-        t=calendar.timegm([year, month, day, hour, minute, second])
-        delta=abs(t-now)
-        if delta > 60:
-            raise Exception("DATE: inaccurate clock: %s (at %d)" % (d, now))
-        conn.quit()
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            now=int(time.time())
+            d=conn.date()
+            m=re.match(b'^(\\d\\d\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)$',
+                       d)
+            if not m:
+                raise Exception('DATE: malformed response: %s' % d)
+            year=int(m.group(1))
+            month=int(m.group(2))
+            day=int(m.group(3))
+            hour=int(m.group(4))
+            minute=int(m.group(5))
+            second=int(m.group(6))
+            if year < 2015: raise Exception('DATE: implausible year: %s' % d)
+            if month < 1 or month > 12: raise Exception('DATE: bad month: %s' % d)
+            if day < 1 or day > 31: raise Exception('DATE: bad day: %s' % d)
+            if hour > 23: raise Exception('DATE: bad hour: %s' % d)
+            if minute > 59: raise Exception('DATE: bad minute: %s' % d)
+            if second > 59: raise Exception('DATE: bad second: %s' % d)
+            t=calendar.timegm([year, month, day, hour, minute, second])
+            delta=abs(t-now)
+            if delta > 60:
+                raise Exception("DATE: inaccurate clock: %s (at %d)" % (d, now))
 
     # -------------------------------------------------------------------------
     # Testing HELP
@@ -533,19 +530,18 @@ class Tests(object):
         Tests the HELP command.
 
         """
-        conn=nntpbits.ClientConnection((self.address, self.port))
-        def check(which):
-            lines=conn.help()
-            for line in lines:
-                try:
-                    line.decode()
-                except Exception as e:
-                    raise Exception("HELP: %s response is not valid UTF-8"
-                                    % which)
-        check("first")
-        conn._mode_reader()     # cheating
-        check("second")
-        conn.quit()
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            def check(which):
+                lines=conn.help()
+                for line in lines:
+                    try:
+                        line.decode()
+                    except Exception as e:
+                        raise Exception("HELP: %s response is not valid UTF-8"
+                                        % which)
+            check("first")
+            conn._mode_reader()     # cheating
+            check("second")
 
     # -------------------------------------------------------------------------
     # Testing CAPABILTIES
@@ -556,37 +552,36 @@ class Tests(object):
         Tests the CAPABILITIES command.
 
         """
-        conn=nntpbits.ClientConnection((self.address, self.port))
-        def check(which):
-            cap = conn.capabilities()
-            if len(cap) == 0:
-                raise Exception("CAPABILITIES: %s response empty/missing"
-                                % which)
-            if cap[0] != b'VERSION 2':
-                raise Exception("CAPABILITIES: %s: bogus version: %s"
-                                % (which, cap[0]))
-            if b'READER' in cap:
-                lcaps = conn.capabilities_list()
-                if not b'ACTIVE' in lcaps:
-                    raise Exception("CAPABILITIES: %s: READER but no LIST ACTIVE"
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            def check(which):
+                cap = conn.capabilities()
+                if len(cap) == 0:
+                    raise Exception("CAPABILITIES: %s response empty/missing"
                                     % which)
-                if not b'NEWSGROUPS' in lcaps:
-                    raise Exception("CAPABILITIES: %s: READER but no LIST NEWSGROUPS"
-                                    % which)
-            if b'OVER' in cap:
-                if not b'READER' in cap:
-                    raise Exception("CAPABILITIES: %s: OVER but no READER"
-                                    % which)
-                if not b'OVERVIEW.FMT' in conn.capabilities_list():
-                    raise Exception("CAPABILITIES: %s: OVER but no LIST OVERVIEW.FMT"
-                                    % which)
-        check("first")
-        if b'MODE-READER' in conn.capabilities():
-            conn._mode_reader()     # cheating
-            if not b'READER' in conn.capabilities():
-                raise Exception("CAPABILITIES: no READER after MODE READER")
-            check("second")
-        conn.quit()
+                if cap[0] != b'VERSION 2':
+                    raise Exception("CAPABILITIES: %s: bogus version: %s"
+                                    % (which, cap[0]))
+                if b'READER' in cap:
+                    lcaps = conn.capabilities_list()
+                    if not b'ACTIVE' in lcaps:
+                        raise Exception("CAPABILITIES: %s: READER but no LIST ACTIVE"
+                                        % which)
+                    if not b'NEWSGROUPS' in lcaps:
+                        raise Exception("CAPABILITIES: %s: READER but no LIST NEWSGROUPS"
+                                        % which)
+                if b'OVER' in cap:
+                    if not b'READER' in cap:
+                        raise Exception("CAPABILITIES: %s: OVER but no READER"
+                                        % which)
+                    if not b'OVERVIEW.FMT' in conn.capabilities_list():
+                        raise Exception("CAPABILITIES: %s: OVER but no LIST OVERVIEW.FMT"
+                                        % which)
+            check("first")
+            if b'MODE-READER' in conn.capabilities():
+                conn._mode_reader()     # cheating
+                if not b'READER' in conn.capabilities():
+                    raise Exception("CAPABILITIES: no READER after MODE READER")
+                check("second")
 
     # -------------------------------------------------------------------------
     # Testing ARTICLE/HEAD/BODY/STAT
@@ -597,20 +592,19 @@ class Tests(object):
         Test article lookup by <message id>.
 
         """
-        conn=nntpbits.ClientConnection((self.address, self.port))
-        articles=self._post_articles(conn)
-        for cmd,parse in Tests._article_lookup_commands():
-            logging.debug("test_article_id %s" % cmd)
-            method=getattr(conn, cmd)
-            for ident,article in articles:
-                r_number,r_ident,r=method(ident)
-                if ident != r_ident:
-                    raise Exception("%s: returned wrong ident (%s vs %s)"
-                                    % (cmd, ident, r_ident))
-                r_header,r_body,r_ident=parse(r)
-                self._check_article(cmd, ident, article,
-                                    r_header, r_body, r_ident)
-        conn.quit()
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            articles=self._post_articles(conn)
+            for cmd,parse in Tests._article_lookup_commands():
+                logging.debug("test_article_id %s" % cmd)
+                method=getattr(conn, cmd)
+                for ident,article in articles:
+                    r_number,r_ident,r=method(ident)
+                    if ident != r_ident:
+                        raise Exception("%s: returned wrong ident (%s vs %s)"
+                                        % (cmd, ident, r_ident))
+                    r_header,r_body,r_ident=parse(r)
+                    self._check_article(cmd, ident, article,
+                                        r_header, r_body, r_ident)
 
     def test_article_number(self):
         """t.test_article_id()
@@ -618,31 +612,30 @@ class Tests(object):
         Test article lookup by number.
 
         """
-        conn=nntpbits.ClientConnection((self.address, self.port))
-        articles=self._post_articles(conn)
-        count,low,high=conn.group(self.group)
-        ident_to_number={}
-        r_number,r_ident,_=conn.stat()
-        while r_ident:
-            for ident,article in articles:
-                if r_ident == ident:
-                    ident_to_number[ident]=r_number
-            r_number,r_ident,_=conn.next()
-        for cmd,parse in Tests._article_lookup_commands():
-            logging.debug("test_article_number %s" % cmd)
-            for ident,article in articles:
-                number=ident_to_number[ident]
-                r_number,r_ident,r=getattr(conn, cmd)(number)
-                if ident != r_ident:
-                    raise Exception("%s: returned wrong ident (%s vs %s)"
-                                    % (cmd, ident, r_ident))
-                if number != r_number:
-                    raise Exception("%s: returned wrong number (%d vs %d)"
-                                    % (number, ident, r_number))
-                r_header,r_body,r_ident=parse(r)
-                self._check_article(cmd, ident, article,
-                                    r_header, r_body, r_ident)
-        conn.quit()
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            articles=self._post_articles(conn)
+            count,low,high=conn.group(self.group)
+            ident_to_number={}
+            r_number,r_ident,_=conn.stat()
+            while r_ident:
+                for ident,article in articles:
+                    if r_ident == ident:
+                        ident_to_number[ident]=r_number
+                r_number,r_ident,_=conn.next()
+            for cmd,parse in Tests._article_lookup_commands():
+                logging.debug("test_article_number %s" % cmd)
+                for ident,article in articles:
+                    number=ident_to_number[ident]
+                    r_number,r_ident,r=getattr(conn, cmd)(number)
+                    if ident != r_ident:
+                        raise Exception("%s: returned wrong ident (%s vs %s)"
+                                        % (cmd, ident, r_ident))
+                    if number != r_number:
+                        raise Exception("%s: returned wrong number (%d vs %d)"
+                                        % (number, ident, r_number))
+                    r_header,r_body,r_ident=parse(r)
+                    self._check_article(cmd, ident, article,
+                                        r_header, r_body, r_ident)
 
     @staticmethod
     def _article_lookup_commands():

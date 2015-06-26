@@ -606,39 +606,72 @@ class Tests(object):
         conn=nntpbits.ClientConnection()
         conn.connect((self.address, self.port))
         articles=self._post_articles(conn)
-        for cmd,parse in [['article', Tests._parse_article],
-                             ['head', Tests._parse_article],
-                             ['body', lambda body: (None, body, None)],
-                             ['stat', lambda ident: (None, None, ident)]]:
+        for cmd,parse in Tests._article_lookup_commands():
             method=getattr(conn, cmd)
             for ident,article in articles:
-                header,body,_=Tests._parse_article(article)
                 r=method(ident)
                 r_header,r_body,r_ident=parse(r)
-                # Ident should match
-                if r_ident is not None:
-                    logging.debug("%s <-> %s" % (ident, r_ident))
-                    if r_ident != ident:
-                        raise Exception("%s: ID mismatch (%s vs %s)"
-                                        % (cmd, ident, r_ident))
-                # Headers we supplied should match
-                if r_header is not None:
-                    for field in header:
-                        if field not in r_header:
-                            raise Exception("%s: missing %s header"
-                                            % (cmd, field))
-                        value=header[field]
-                        r_value=r_header[field]
-                        logging.debug("%s: %s <-> %s" % (field, value, r_value))
-                        if r_value != value:
-                            raise Exception("%s: non-matching %s header: '%s' vs '%s'"
-                                            % (cmd, field, value, r_value))
-                # Body should match
-                if r_body is not None:
-                    if body != r_body:
-                        raise Exception("%s: non-matching body: '%s' vs '%s'"
-                                            % (cmd, body, r_body))
+                self._check_article(cmd, ident, article,
+                                    r_header, r_body, r_ident)
         conn.quit()
+
+    def test_article_number(self):
+        """t.test_article_id()
+
+        Test article lookup by number.
+
+        """
+        conn=nntpbits.ClientConnection()
+        conn.connect((self.address, self.port))
+        articles=self._post_articles(conn)
+        count,low,high=conn.group(self.group)
+        ident_to_number={}
+        for number in range(low, high+1):
+            r_ident=conn.stat(number)
+            for ident,article in articles:
+                if r_ident == ident:
+                    ident_to_number[ident]=number
+        for cmd,parse in Tests._article_lookup_commands():
+            for ident,article in articles:
+                r=getattr(conn, cmd)(ident_to_number[ident])
+                r_header,r_body,r_ident=parse(r)
+                self._check_article(cmd, ident, article,
+                                    r_header, r_body, r_ident)
+        conn.quit()
+
+    @staticmethod
+    def _article_lookup_commands():
+        return[['article', Tests._parse_article],
+               ['head', Tests._parse_article],
+               ['body', lambda body: (None, body, None)],
+               ['stat', lambda ident: (None, None, ident)]]
+
+    def _check_article(self, cmd, ident, article,
+                       r_header, r_body, r_ident):
+        header,body,_=Tests._parse_article(article)
+        # Ident should match
+        if r_ident is not None:
+            logging.debug("%s <-> %s" % (ident, r_ident))
+            if r_ident != ident:
+                raise Exception("%s: ID mismatch (%s vs %s)"
+                                % (cmd, ident, r_ident))
+        # Headers we supplied should match
+        if r_header is not None:
+            for field in header:
+                if field not in r_header:
+                    raise Exception("%s: missing %s header"
+                                    % (cmd, field))
+                value=header[field]
+                r_value=r_header[field]
+                logging.debug("%s: %s <-> %s" % (field, value, r_value))
+                if r_value != value:
+                    raise Exception("%s: non-matching %s header: '%s' vs '%s'"
+                                    % (cmd, field, value, r_value))
+        # Body should match
+        if r_body is not None:
+            if body != r_body:
+                raise Exception("%s: non-matching body: '%s' vs '%s'"
+                                    % (cmd, body, r_body))
 
     _header_re=re.compile(b'^([a-zA-Z0-9\\-]+):\\s+(.*)$')
 

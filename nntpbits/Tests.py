@@ -215,7 +215,7 @@ class Tests(object):
         CONN as the client connection.
 
         """
-        article_posted=conn.article(ident)
+        _,_,article_posted=conn.article(ident)
         if article_posted is None:
             raise Exception("article cannot be retrieved by message-ID")
         (count,low,high)=conn.group(self.group)
@@ -228,7 +228,7 @@ class Tests(object):
                 break
         if number_in_group is None:
             raise Exception("article not found in group overview data")
-        article_posted=conn.article(number_in_group)
+        _,_,article_posted=conn.article(number_in_group)
         if article_posted is None:
             raise Exception("article cannot be retrieved from group")
 
@@ -607,9 +607,13 @@ class Tests(object):
         conn.connect((self.address, self.port))
         articles=self._post_articles(conn)
         for cmd,parse in Tests._article_lookup_commands():
+            logging.debug("test_article_id %s" % cmd)
             method=getattr(conn, cmd)
             for ident,article in articles:
-                r=method(ident)
+                r_number,r_ident,r=method(ident)
+                if ident != r_ident:
+                    raise Exception("%s: returned wrong ident (%s vs %s)"
+                                    % (cmd, ident, r_ident))
                 r_header,r_body,r_ident=parse(r)
                 self._check_article(cmd, ident, article,
                                     r_header, r_body, r_ident)
@@ -626,14 +630,23 @@ class Tests(object):
         articles=self._post_articles(conn)
         count,low,high=conn.group(self.group)
         ident_to_number={}
-        for number in range(low, high+1):
-            r_ident=conn.stat(number)
+        r_number,r_ident,_=conn.stat()
+        while r_ident:
             for ident,article in articles:
                 if r_ident == ident:
-                    ident_to_number[ident]=number
+                    ident_to_number[ident]=r_number
+            r_number,r_ident,_=conn.next()
         for cmd,parse in Tests._article_lookup_commands():
+            logging.debug("test_article_number %s" % cmd)
             for ident,article in articles:
-                r=getattr(conn, cmd)(ident_to_number[ident])
+                number=ident_to_number[ident]
+                r_number,r_ident,r=getattr(conn, cmd)(number)
+                if ident != r_ident:
+                    raise Exception("%s: returned wrong ident (%s vs %s)"
+                                    % (cmd, ident, r_ident))
+                if number != r_number:
+                    raise Exception("%s: returned wrong number (%d vs %d)"
+                                    % (number, ident, r_number))
                 r_header,r_body,r_ident=parse(r)
                 self._check_article(cmd, ident, article,
                                     r_header, r_body, r_ident)

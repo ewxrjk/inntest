@@ -213,18 +213,80 @@ class ClientConnection(nntpbits.Connection):
     # -------------------------------------------------------------------------
     # LAST & NEXT (3977 6.1.3-4)
 
-    #TODO
+    def next(self):
+        """n.next() -> NUMBER,ID,None | None,None,None
+
+        Advance to the next article in the group.  Returns the newly
+        selected article's number andmessage ID on success or None at
+        the end of the group.
+
+        The odd return convention is designed to fit in with the
+        article, head and body methods.
+
+        """
+        return self._select(b'NEXT')
+
+    def last(self):
+        """n.last() -> NUMBER,ID,None | None,None,None
+
+        Retreat to the previous article in the group.  Returns the
+        newly selected article's message ID on success or None at the
+        end of the group.
+
+        The odd return convention is designed to fit in with the
+        article, head and body methods.
+
+        """
+        return self._select(b'LAST')
+
+    # -------------------------------------------------------------------------
+    # STAT (3977 6.2.4)
+
+    def stat(self, ident=None):
+        """n.stat(ID|NUMBER) -> NUMBER,ID,None | None,None,None
+        n.stat() -> NUMBER,ID,None | None,None,None
+
+        Tests the presence of an article by number from the current
+        group or by message ID; or test whether there is a currently
+        selected article.
+
+        The odd return convention is designed to fit in with the
+        article, head and body methods.
+
+        """
+        if isinstance(ident, int):
+            ident="%d" % ident
+        if ident is None:
+            return self._select(b'STAT')
+        else:
+            return self._select(b'STAT', nntpbits._normalize(ident))
+
+    _stat_re=re.compile(b'^(\\d+) +(<[^>]+>)( +.*)?$')
+
+    def _select(self, *cmd):
+        code,arg=self.transact(b' '.join(cmd))
+        if code==223:
+            m=ClientConnection._stat_re.match(arg)
+            if not m:
+                raise Exception("%s command malformed response: %s"
+                        % (str(cmd[0]), arg))
+            return (int(m.group(1)), m.group(2), None)
+        if code in [420, 421, 422, 423]:
+            return None, None, None
+        raise Exception("%s command failed: %s" % (str(cmd[0]), self.response))
 
     # -------------------------------------------------------------------------
     # ARTICLE, HEAD, BODY (3977 6.2.1-3)
 
-    def article(self, ident):
-        """n.article(NUMBER) -> [LINE] | None
-        n.article(ID) -> [LINE] | None
+    def article(self, ident=None):
+
+        """n.article(ID|NUMBER) -> NUMBER,IDENT,LINES | None,None,None
+        n.article() -> NUMBER,IDENT,LINES | None,None,None
 
         Retrieves an article by number from the current group, or by
         message ID specified as a bytes object (or as a string, which
-        will be converted to a bytes object using the ASCII encoding).
+        will be converted to a bytes object using the ASCII encoding);
+        or retrieves the current article.
 
         The return value is either a list of lines (as bytes objects,
         without any line endings) or None if the article does not exist.
@@ -232,14 +294,14 @@ class ClientConnection(nntpbits.Connection):
         """
         return self._article(ident, b'ARTICLE', 220)
 
-    def head(self, ident):
-        """n.head(NUMBER) -> [LINE] | None
-        n.head(ID) -> [LINE] | None
+    def head(self, ident=None):
+        """n.head(ID|NUMBER) -> NUMBER,IDENT,LINES | None,None,None
+        n.head() -> NUMBER,IDENT,LINES | None,None,None
 
         Retrieves the header of an article by number from the current
         group, or by message ID specified as a bytes object (or as a
         string, which will be converted to a bytes object using the
-        ASCII encoding).
+        ASCII encoding); or retrieves the current article's header.
 
         The return value is either a list of lines (as bytes objects,
         without any line endings) or None if the article does not exist.
@@ -247,14 +309,13 @@ class ClientConnection(nntpbits.Connection):
         """
         return self._article(ident, b'HEAD', 221)
 
-    def body(self, ident):
-        """n.body(NUMBER) -> [LINE] | None
-        n.body(ID) -> [LINE] | None
+    def body(self, ident=None):
+        """n.body(ID|NUMBER) -> NUMBER,IDENT,LINES | None,None,None
 
         Retrieves the body of an article by number from the current
         group, or by message ID specified as a bytes object (or as a
         string, which will be converted to a bytes object using the
-        ASCII encoding).
+        ASCII encoding); or retrieves the current article's body.
 
         The return value is either a list of lines (as bytes objects,
         without any line endings) or None if the article does not exist.
@@ -262,10 +323,8 @@ class ClientConnection(nntpbits.Connection):
         """
         return self._article(ident, b'BODY', 222)
 
-    _stat_re=re.compile(b'^\\d+ +(<[^>]+>)( +.*)?$')
-
     def _article(self, ident, command, response):
-        """n._article(NUMBER|ID, COMMAND, RESPONSE) -> LINES
+        """n._article(NUMBER|ID, COMMAND, RESPONSE) -> NUMBER,IDENT,LINES
 
         Issues COMMAND to retrieve the identified article.  RESPONSE
         should be the positive response code to expect.  Returns None
@@ -275,39 +334,22 @@ class ClientConnection(nntpbits.Connection):
         self._require_reader()
         if isinstance(ident, int):
             ident="%d" % ident
-        code,arg=self.transact(command + b' ' + nntpbits._normalize(ident))
+        if ident is None:
+            cmd=command
+        else:
+            cmd=command + b' ' + nntpbits._normalize(ident)
+        code,arg=self.transact(cmd)
         if code == response:
-            if code == 223:
-                m=ClientConnection._stat_re.match(arg)
-                if not m:
-                    raise Exception("%s command malformed response: %s"
-                            % (str(command), arg))
-                return m.group(1)
-            else:
-                return self.receive_lines()
+            m=ClientConnection._stat_re.match(arg)
+            if not m:
+                raise Exception("%s command malformed response: %s"
+                        % (str(command), arg))
+            return int(m.group(1)), m.group(2), self.receive_lines()
         elif code == 423 or code == 430:
-            return None
+            return None,None,None
         else:
             raise Exception("%s command failed: %s"
                             % (str(command), self.response))
-
-    # -------------------------------------------------------------------------
-    # STAT (3977 6.2.4)
-
-    def stat(self, ident):
-        """n.stat(NUMBER) -> ID | None
-        n.stat(ID) -> ID | None
-
-        Tests the presence of an article by number from the current
-        group, or by message ID specified as a bytes object (or as a
-        string, which will be converted to a bytes object using the
-        ASCII encoding).
-
-        The return value is the message ID if the article exists and
-        None otherwise.
-
-        """
-        return self._article(ident, b'STAT', 223)
 
     # -------------------------------------------------------------------------
     # POST & IHAVE (3977 6.3.1-2)

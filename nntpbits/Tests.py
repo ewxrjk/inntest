@@ -92,7 +92,7 @@ class Tests(object):
         self.timelimit=timelimit
         self.trigger=trigger
         self.trigger_timeout=5
-        self.seed=os.urandom(48)
+        self.seed=os.urandom(32)
         self.sequence=0
         self.lock=threading.Lock()
 
@@ -106,10 +106,10 @@ class Tests(object):
         with self.lock:
             sequence=self.sequence
             self.sequence+=1
-        h=hashlib.sha384()
+        h=hashlib.sha256()
         h.update(self.seed)
         h.update(struct.pack("<q", sequence))
-        return base64.b64encode(h.digest())
+        return base64.b64encode(h.digest()[:18])
 
     def _ident(self, ident=None):
         """t._ident([IDENT]) -> IDENT

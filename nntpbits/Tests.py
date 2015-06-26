@@ -126,7 +126,7 @@ class Tests(object):
     def _date(self):
         """t._date() -> BYTES
 
-        Returns the data in a format suitable for use in news
+        Returns the date in a format suitable for use in news
         articles.
 
         """

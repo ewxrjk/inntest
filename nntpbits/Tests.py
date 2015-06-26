@@ -202,8 +202,7 @@ class Tests(object):
                  b'Message-ID: ' + ident,
                  b'',
                  b'nntpbits.Test test posting']
-        conn=nntpbits.ClientConnection()
-        conn.connect((self.address, self.port))
+        conn=nntpbits.ClientConnection((self.address, self.port))
         conn.post(article)
         self._check_posted(conn, ident)
         conn.quit()
@@ -305,8 +304,7 @@ class Tests(object):
                  b'Date: ' + self._date(),
                  b'',
                  b'nntpbits.Test test posting']
-        conn=nntpbits.ClientConnection()
-        conn.connect((self.address, self.port))
+        conn=nntpbits.ClientConnection((self.address, self.port))
         conn.ihave(article)
         self._check_posted(conn, ident)
         conn.quit()
@@ -342,8 +340,7 @@ class Tests(object):
         syntax.  Then (if possible) switches to reader mode and
         repeats the exercise.
         """
-        conn=nntpbits.ClientConnection()
-        conn.connect((self.address, self.port))
+        conn=nntpbits.ClientConnection((self.address, self.port))
         def check():
             for kw in conn.capabilities_list():
                 self._test_list(conn, kw)
@@ -502,8 +499,7 @@ class Tests(object):
         clock is reasonably accurate.
 
         """
-        conn=nntpbits.ClientConnection()
-        conn.connect((self.address, self.port))
+        conn=nntpbits.ClientConnection((self.address, self.port))
         now=int(time.time())
         d=conn.date()
         m=re.match(b'^(\\d\\d\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)$',
@@ -537,8 +533,7 @@ class Tests(object):
         Tests the HELP command.
 
         """
-        conn=nntpbits.ClientConnection()
-        conn.connect((self.address, self.port))
+        conn=nntpbits.ClientConnection((self.address, self.port))
         def check(which):
             lines=conn.help()
             for line in lines:
@@ -561,8 +556,7 @@ class Tests(object):
         Tests the CAPABILITIES command.
 
         """
-        conn=nntpbits.ClientConnection()
-        conn.connect((self.address, self.port))
+        conn=nntpbits.ClientConnection((self.address, self.port))
         def check(which):
             cap = conn.capabilities()
             if len(cap) == 0:
@@ -603,8 +597,7 @@ class Tests(object):
         Test article lookup by <message id>.
 
         """
-        conn=nntpbits.ClientConnection()
-        conn.connect((self.address, self.port))
+        conn=nntpbits.ClientConnection((self.address, self.port))
         articles=self._post_articles(conn)
         for cmd,parse in Tests._article_lookup_commands():
             logging.debug("test_article_id %s" % cmd)
@@ -625,8 +618,7 @@ class Tests(object):
         Test article lookup by number.
 
         """
-        conn=nntpbits.ClientConnection()
-        conn.connect((self.address, self.port))
+        conn=nntpbits.ClientConnection((self.address, self.port))
         articles=self._post_articles(conn)
         count,low,high=conn.group(self.group)
         ident_to_number={}

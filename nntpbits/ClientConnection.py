@@ -26,12 +26,21 @@ class ClientConnection(nntpbits.Connection):
     Construction:
     nntpbits.ClientConnection() -> NNTP client object
 
-    Call the connect() method to actually establish a connection.
+    Optional arguments:
+    address -- host,port tuple
+    timeout -- connect timeout
+    source_address -- host,port tuple to bind local endpoint to
+
+    Alternatively call the connect() method to actually establish a
+    connection.
 
     """
-    def __init__(self, stoppable=False):
+    def __init__(self, address=None, timeout=None, source_address=None,
+                 stoppable=False):
         nntpbits.Connection.__init__(self, stoppable=stoppable)
         self._reset()
+        if address is not None:
+            self.connect(address, timeout, source_address)
 
     def _reset(self):
         """n._reset()
@@ -51,7 +60,12 @@ class ClientConnection(nntpbits.Connection):
 
         Connect to a remote server.
 
-        The arguments are the same as socket.create_connection.
+        Arguments:
+        address -- host,port tuple
+
+        Optional:
+        timeout -- connect timeout
+        source_address -- host,port tuple to bind local endpoint to
 
         """
         logging.debug("Connecting to %s port %s" % address)

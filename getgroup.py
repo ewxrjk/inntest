@@ -37,7 +37,7 @@ def dump_group(server, port, group):
     (count, low, high)=client.group(group)
     linesep=bytes(os.linesep, 'ascii')
     for number in range(low, high+1):
-        article=client.article(number)
+        _,_,article=client.article(number)
         if article is not None:
             with open("%s:%d" % (group,number), "wb") as f:
                 for line in article:

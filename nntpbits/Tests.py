@@ -986,3 +986,30 @@ class Tests(object):
                 rc=os.system(cmd)
                 if rc != 0:
                     raise Exception("Remove command failed (%d)" % rc)
+
+    # -------------------------------------------------------------------------
+    # Testing LISTGROUP
+
+    def test_listgroup(self):
+        """.t.test_listgroup()
+
+        Test LISTGROUP.
+
+        """
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn._require_reader() # cheating
+            if not b'HDR' in conn.capabilities():
+                return 'skip'
+            articles=self._post_articles(conn)
+            seen=set()
+            conn.group(self.group)
+            for number in conn.listgroup():
+                _,_,lines=conn.head(number)
+                for line in lines:
+                    m=Tests._header_re.match(line)
+                    if m.group(1).lower()==b'message-id:':
+                        seen.add(m.group(2))
+                        break
+            for ident,article in articles:
+                if not ident in seen:
+                    raise Exception("LISTGROUP: failed to list %s" % ident)

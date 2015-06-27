@@ -246,12 +246,34 @@ class ClientConnection(nntpbits.Connection):
     # -------------------------------------------------------------------------
     # LISTGROUP (3977 6.1.2)
 
-    #TODO
+    def listgroup(self, low=None, high=None, group=None):
+        """n.listgroup([LOW, HIGH, [group=GROUP]]) -> LIST
+
+        Lists valid article numbers in the range LOW-HIGH.  If a group
+        is specified then that group is listed; otherwise the current
+        group is listed.
+
+        Note that LOW and HIGH are _inclusive_ bounds, unlike the
+        usual Python idiom.
+
+        """
+        self._require_reader()
+        cmd=[b'LISTGROUP']
+        if low is not None:
+            cmd.append(bytes("%d-%d" % (low, high), 'ascii'))
+        if group is not None:
+            cmd.append(nntpbits._normalize(group))
+        code,arg=self.transact(cmd)
+        if code == 211:
+            return [int(line) for line in self.receive_lines()]
+        else:
+            raise Exception("LISTGROUP command failed: %s" % self.response)
 
     # -------------------------------------------------------------------------
     # LAST & NEXT (3977 6.1.3-4)
 
     def next(self):
+
         """n.next() -> NUMBER,ID,None | None,None,None
 
         Advance to the next article in the group.  Returns the newly

@@ -23,6 +23,8 @@ set -e
 
 echo "=== $0 $1 ==="
 
+shift
+
 ./tests.py ${DEBUG} \
            -s "${SERVER}" -p "${PORT}" \
            -g "${GROUP}" -D "${DOMAIN}" -l "${LOCALPORT}" \

@@ -89,7 +89,6 @@ class Tests(object):
         self.domain=nntpbits._normalize(domain)
         self.localserveraddress=localserver
         self.localserverclass=TestServer
-        self.localserver=None
         self.timelimit=timelimit
         self.trigger=trigger
         self.trigger_timeout=5
@@ -171,12 +170,12 @@ class Tests(object):
         address.  This is used by propagation tests.
 
         """
-        self.localserver=TestServer()
-        self.localserver.listen_address(self.localserveraddress[0],
-                                        self.localserveraddress[1],
-                                        wait=False,
-                                        daemon=True)
-        return self.localserver
+        ls=TestServer()
+        ls.listen_address(self.localserveraddress[0],
+                          self.localserveraddress[1],
+                          wait=False,
+                          daemon=True)
+        return ls
 
     # -------------------------------------------------------------------------
     # Testing POST

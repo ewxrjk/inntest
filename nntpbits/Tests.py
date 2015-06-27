@@ -687,7 +687,8 @@ class Tests(object):
                ['stat', lambda ident: (None, None, ident)]]
 
     def _check_article(self, cmd, ident, article,
-                       r_header, r_body, r_ident):
+                       r_header, r_body, r_ident,
+                       _allow_missing=set([])):
         header,body,_=Tests._parse_article(article)
         # Ident should match
         if r_ident is not None:
@@ -699,6 +700,8 @@ class Tests(object):
         if r_header is not None:
             for field in header:
                 if field not in r_header:
+                    if field in _allow_missing:
+                        continue
                     raise Exception("%s: missing %s header"
                                     % (cmd, field))
                 value=header[field]
@@ -813,3 +816,55 @@ class Tests(object):
         articles.append([ident, article])
 
         return articles
+
+    # -------------------------------------------------------------------------
+    # Testing OVER
+
+    def test_over_id(self):
+        """t.test_over_id()
+
+        Test OVER lookup by <message id>.
+
+        """
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn._require_reader() # cheating
+            if not b'OVER' in conn.capabilities():
+                return
+            if not b'MSGID' in conn.capability_arguments(b'OVER'):
+                return
+            articles=self._post_articles(conn)
+            count,low,high=conn.group(self.group)
+            for ident,article in articles:
+                overviews=conn.over(ident)
+                number,overview=conn.parse_overview(overviews[0])
+                self._check_article(b'OVER', ident, article,
+                                    overview, None, overview[b'message-id:'])
+
+    def test_over_number(self):
+        """t.test_over_id()
+
+        Test OVER lookup by number.
+
+        """
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn._require_reader() # cheating
+            if not b'OVER' in conn.capabilities():
+                return
+            articles=self._post_articles(conn)
+            count,low,high=conn.group(self.group)
+            overviews=conn.over(low,high)
+            ov={}
+            for overview in overviews:
+                number,overview=conn.parse_overview(overview)
+                ov[overview[b'message-id:']]=overview
+            allowmissing=set([h
+                              for h in [b'newsgroups:', b'keywords:',
+                                        b'organization:', b'user-agent:']
+                              if h not in conn.list_overview_fmt()])
+            for ident,article in articles:
+                if not ident in ov:
+                    raise Exception("OVER: didn't find article %s"
+                                    % ident)
+                self._check_article(b'OVER', ident, article,
+                                    ov[ident], None, ov[ident][b'message-id:'],
+                                    allowmissing)

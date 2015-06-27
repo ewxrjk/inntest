@@ -205,6 +205,7 @@ class ClientConnection(nntpbits.Connection):
             raise Exception("MODE READER command failed %s" % self.response)
         self.capability_list=None
         self.capability_set=None
+        self.overview_fmt=None
 
     # -------------------------------------------------------------------------
     # QUIT (3977 5.4)
@@ -571,22 +572,33 @@ class ClientConnection(nntpbits.Connection):
     # -------------------------------------------------------------------------
     # OVER (3977 8.3, 8.4)
 
-    def over(self, low, high):
+    def over(self, low, high=None):
         """n.over(LOW, HIGH) -> LIST
+        n.over(ID) -> LIST
 
         Return overview data for a range of messages.  Each list
         element is an unparsed bytes object as returned from the
         server.
 
         Note that LOW and HIGH are _inclusive_ bounds, unlike the
-        usual Python idiom.
+        usual Python idiom.  If no articles are in the range then []
+        is returned, even if the server returned 423.
+
+        If an message ID is passed then only overview data for that
+        message is returned (i.e. as a single-element list).  If the
+        article doesn't exist then None is returned.
 
         """
-        code,arg=self.transact(bytes('OVER %d-%d' % (low, high), 'ascii'))
+        if high is not None:
+            code,arg=self.transact(bytes('OVER %d-%d' % (low, high), 'ascii'))
+        else:
+            code,arg=self.transact(b'OVER ' + nntpbits._normalize(low))
         if code == 224:
             return self.receive_lines()
         elif code == 423:
             return []
+        elif code == 430:
+            return None
         else:
             raise Exception("OVER command failed: %s" % self.response)
 
@@ -631,10 +643,10 @@ class ClientConnection(nntpbits.Connection):
         if b'OVER' in self.capabilities():
             code,arg=self.transact(b"LIST OVERVIEW.FMT")
             if code == 215:
-                self.overview_fmt=self.receive_lines()
-                fixups = { b'bytes:': b':bytes', b'lines:': b':lines' }
+                self.overview_fmt=[x.lower() for x in self.receive_lines()]
+                fixups={ b'bytes:': b':bytes', b'lines:': b':lines' }
                 for i in range(0,len(self.overview_fmt)):
-                    l = self.overview_fmt[i].lower()
+                    l=self.overview_fmt[i]
                     if len(l) >= 5 and l[-5:] == b':full':
                         self.overview_fmt[i]=self.overview_fmt[i][:-5]
                     if l in fixups:
@@ -648,7 +660,8 @@ class ClientConnection(nntpbits.Connection):
     def list_overview_fmt(self):
         """n.list_overview_fmt() -> LIST
 
-        Return the list of fields used by the OVER command.
+        Return the list of fields used by the OVER command as a list
+        of lower-case bytes objects.
 
         If the server returns Bytes: or Lines:, these are converted to
         the RFC3977 values of :bytes and :lines.

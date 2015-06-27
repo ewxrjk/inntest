@@ -65,7 +65,7 @@ make sure that it, and all its subdirectories, are writable by the
 user the news server runs as.
 
 I use [Viewgcov](https://github.com/ewxrjk/viewgcov) to inspect the
-results.  Start it in the build directory and select File->Refresh.
+results.  Start it in the build directory and select File→Refresh.
 
 Sanitizers
 ----------

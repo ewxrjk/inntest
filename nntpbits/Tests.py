@@ -552,6 +552,32 @@ class Tests(object):
             check("second")
 
     # -------------------------------------------------------------------------
+    # Extra testing for LIST MOTD
+
+    def test_list_motd(self):
+        """t.test_help()
+
+        Tests the LIST MOTD command.
+
+        """
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            def check(which):
+                if b'MOTD' not in conn.capabilities_list():
+                    return
+                lines=conn.list(b'MOTD')
+                if lines is None:
+                    return
+                for line in lines:
+                    try:
+                        line.decode()
+                    except Exception as e:
+                        raise Exception("LIST MOTD: %s response is not valid UTF-8"
+                                        % which)
+            check("first")
+            conn._mode_reader()     # cheating
+            check("second")
+
+    # -------------------------------------------------------------------------
     # Testing CAPABILTIES
 
     def test_capabilities(self):

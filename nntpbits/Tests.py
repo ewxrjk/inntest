@@ -415,12 +415,7 @@ class Tests(object):
             if kw not in self._list_wildmat:
                 return
             verify=Tests._wildmat_to_method(wildmat)
-        try:
-            lines=conn.list(kw, wildmat)
-        except Exception as e:
-            # Can't check this one, but not worth failing a test for
-            logging.error(e)
-            return
+        lines=conn.list(kw, wildmat)
         if kw is None:
             kw=b'ACTIVE'
         if lines is None:

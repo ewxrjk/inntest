@@ -370,6 +370,11 @@ class Tests(object):
                         b'NEWSGROUPS',
                         b'COUNTS',
                         b'SUBSCRIPTIONS'])
+    _list_optional=set([ b'MOTD',
+                         b'COUNT',
+                         b'DISTRIBUTIONS',
+                         b'MODERATORS',
+                         b'SUBSCRIPTIONS' ])
 
     # Regexps that LIST subcommand output must match
     # For subcommands that can take a wildmat, first capture
@@ -409,6 +414,10 @@ class Tests(object):
             return
         if kw is None:
             kw=b'ACTIVE'
+        if lines is None:
+            if kw in Tests._list_optional:
+                return
+            raise Exception("LIST %s: unexpected 503" % kw)
         name='list_'+str(kw, 'ascii').replace('.', '_').lower()
         regex_name='_'+name+'_re'
         regex=getattr(self, regex_name, None)

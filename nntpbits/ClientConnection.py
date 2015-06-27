@@ -519,14 +519,16 @@ class ClientConnection(nntpbits.Connection):
     # LIST (3977 7.6, 6048)
 
     def list(self, what=b'ACTIVE', wildmat=None):
-        """n.list(WHAT) -> LIST
-        n.list(WHAT, WILDMAT) -> LIST
+        """n.list(WHAT) -> LIST | None
+        n.list(WHAT, WILDMAT) -> LIST | None
 
         Issues a LIST command.  WHAT should be 'ACTIVE', 'NEWSGROUPS', etc.
         WILDMAT is optional and limits the output.  See RFC3977 s4 for
         syntax.
 
-        The return value is a list of bytes objects.
+        The return value is a list of bytes objects, or None if the
+        server recognizes the list type but doesn't have the
+        information.
 
         """
         if what is None:
@@ -548,6 +550,11 @@ class ClientConnection(nntpbits.Connection):
         code,arg=self.transact(b' '.join(cmd))
         if code == 215:
             return self.receive_lines()
+        elif code == 503:
+            # Keyword recognized, but server does not (currently)
+            # maintain the information.  e.g. LIST MOTD when not
+            # configured.
+            return None
         else:
             raise Exception("LIST %s command failed: %s" % (what, self.response))
 

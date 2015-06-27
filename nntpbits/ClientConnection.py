@@ -65,6 +65,7 @@ class ClientConnection(nntpbits.Connection):
         self.posting=None
         self.reader=None
         self.capability_list=None
+        self.capability_set=None
         self.overview_fmt=None
         self.current_group=None
 
@@ -115,7 +116,7 @@ class ClientConnection(nntpbits.Connection):
     # CAPABILITIES (3977 5.2)
 
     def _capabilities(self):
-        """n._capabilities() -> LIST
+        """n._capabilities()
 
         Retrieve the server's capabilities.  If it does not support
         the command an empty list is returned.  (This might be changed
@@ -125,36 +126,44 @@ class ClientConnection(nntpbits.Connection):
         code,arg=self.transact(b"CAPABILITIES")
         if code == 101:
             self.capability_list=self.receive_lines()
+            if self.capability_list[0] != b'VERSION 2':
+                raise Exception("CAPABILITIES: unrecognized version")
         else:
             self.capability_list=[]
+        self.capability_set=set()
+        for cap in self.capability_list[1:]:
+            caps=cap.split()
+            self.capability_set.add(caps[0])
 
     def capabilities(self):
-        """n.capabilities() -> LIST
+        """n.capabilities() -> SET
 
-        Return the server's capability list, as a list of bytes
+        Return the server's capabilities, as a set of bytes
         objects.
 
         The list is cached so it is efficient to repeatedly call this
         function.
 
         """
-        if self.capability_list is None:
+        if self.capability_set is None:
             self._capabilities()
-        return self.capability_list
+        return self.capability_set
 
-    def capabilities_list(self):
-        """n.capabilities_list() -> LIST
+    def capability_arguments(self, cap):
+        """n.capability_arguments(CAP) -> LIST | None
 
-        Returns the list of LIST capabilities, as a list of bytes
-        objects.
-
-        As for capabilities(), the list is cached.
+        Returns the list of arguments for capability CAP, or None if
+        the server doesn't have that capability.
 
         """
-        for cap in self.capabilities():
-            if cap[0:4] == b'LIST':
-                return cap.split()[1:]
-        return []
+        cap=nntpbits._normalize(cap)
+        if self.capability_set is None:
+            self._capabilities()
+        for l in self.capability_list:
+            caps=l.split()
+            if caps[0]==cap:
+                return caps[1:]
+        return None
 
     # -------------------------------------------------------------------------
     # MODE READER (3977 5.3)
@@ -194,7 +203,8 @@ class ClientConnection(nntpbits.Connection):
             self.posting=False
         else:
             raise Exception("MODE READER command failed %s" % self.response)
-        self.capability_list = None
+        self.capability_list=None
+        self.capability_set=None
 
     # -------------------------------------------------------------------------
     # QUIT (3977 5.4)
@@ -537,7 +547,7 @@ class ClientConnection(nntpbits.Connection):
             what=nntpbits._normalize(what).upper()
             cap=what
         # Become a reader if necessary
-        if (cap not in self.capabilities_list()
+        if (cap not in self.capability_arguments(b'LIST')
             and b'MODE-READER' in self.capabilites()):
             self._mode_reader()
         if what is None:

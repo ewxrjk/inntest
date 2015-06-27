@@ -345,10 +345,11 @@ class Tests(object):
         """
         with nntpbits.ClientConnection((self.address, self.port)) as conn:
             def check():
-                for kw in conn.capabilities_list():
+                subcommands=conn.capability_arguments(b'LIST')
+                for kw in subcommands:
                     self._test_list(conn, kw)
                 # Default subcommand is ACTIVE
-                if b'ACTIVE' in conn.capabilities_list():
+                if b'ACTIVE' in subcommands:
                     self._test_list(conn, None)
             check()
             if b'MODE-READER' in conn.capabilities():
@@ -602,11 +603,8 @@ class Tests(object):
                 if len(cap) == 0:
                     raise Exception("CAPABILITIES: %s response empty/missing"
                                     % which)
-                if cap[0] != b'VERSION 2':
-                    raise Exception("CAPABILITIES: %s: bogus version: %s"
-                                    % (which, cap[0]))
+                lcaps=conn.capability_arguments(b'LIST')
                 if b'READER' in cap:
-                    lcaps = conn.capabilities_list()
                     if not b'ACTIVE' in lcaps:
                         raise Exception("CAPABILITIES: %s: READER but no LIST ACTIVE"
                                         % which)
@@ -617,7 +615,7 @@ class Tests(object):
                     if not b'READER' in cap:
                         raise Exception("CAPABILITIES: %s: OVER but no READER"
                                         % which)
-                    if not b'OVERVIEW.FMT' in conn.capabilities_list():
+                    if not b'OVERVIEW.FMT' in lcaps:
                         raise Exception("CAPABILITIES: %s: OVER but no LIST OVERVIEW.FMT"
                                         % which)
             check("first")

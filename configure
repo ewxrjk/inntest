@@ -39,3 +39,7 @@ ${REALLY} mv $PREFIX/etc/inn.conf.new $PREFIX/etc/inn.conf
 if ! grep -q "^${GROUP}" $PREFIX/db/active; then
     ${REALLY} sh -c "echo '${GROUP} 000000000 0000000001 y' >> $PREFIX/db/active"
 fi
+
+# Enable NEWNEWS support for our reader
+${REALLY} sh -c "sed 's/access: RPA/access: RPAN/' < $PREFIX/etc/readers.conf > $PREFIX/etc/readers.conf.new"
+${REALLY} mv $PREFIX/etc/readers.conf.new $PREFIX/etc/readers.conf

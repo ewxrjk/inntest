@@ -909,3 +909,25 @@ class Tests(object):
                             if r_value != value:
                                 raise Exception("HDR: non-matching %s header: '%s' vs '%s'"
                                                 % (field, value, r_value))
+
+    # -------------------------------------------------------------------------
+    # Testing NEWNEWS
+
+    def test_newnews(self):
+        """t.test_newnews()
+
+        Test NEWNEWS.
+
+        """
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn._require_reader() # cheating
+            if not b'NEWNEWS' in conn.capabilities():
+                return 'skip'
+            start=conn.date()
+            while start==conn.date():
+                time.sleep(0.25)
+            articles=self._post_articles(conn)
+            new_idents=set(conn.newnews(self.hierarchy+b'.*', start))
+            for ident,article in articles:
+                if ident not in new_idents:
+                    raise Exception("NEWNEWS: did not find %s" % ident)

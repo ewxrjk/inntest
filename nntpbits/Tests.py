@@ -467,6 +467,19 @@ class Tests(object):
                 raise Exception("LIST OVERVIEW.FMT: header %d partial: %s"
                                 % (i+1, lines[i]))
 
+    def _check_list_motd(self, lines, kw):
+        """t._check_list_motd(LINES, KW)
+
+        Verify that the MOTD data is valid.
+
+        """
+        for line in lines:
+            try:
+                line.decode()
+            except Exception as e:
+                raise Exception("LIST MOTD: %s response is not valid UTF-8"
+                                % which)
+
     @staticmethod
     def _wildmat_pattern_to_re(pattern):
         """t._wildmat_pattern_to_re(PATTERN) -> RE
@@ -569,32 +582,6 @@ class Tests(object):
                         line.decode()
                     except Exception as e:
                         raise Exception("HELP: %s response is not valid UTF-8"
-                                        % which)
-            check("first")
-            conn._mode_reader()     # cheating
-            check("second")
-
-    # -------------------------------------------------------------------------
-    # Extra testing for LIST MOTD
-
-    def test_list_motd(self):
-        """t.test_help()
-
-        Tests the LIST MOTD command.
-
-        """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
-            def check(which):
-                if b'MOTD' not in conn.capabilities_list():
-                    return
-                lines=conn.list(b'MOTD')
-                if lines is None:
-                    return
-                for line in lines:
-                    try:
-                        line.decode()
-                    except Exception as e:
-                        raise Exception("LIST MOTD: %s response is not valid UTF-8"
                                         % which)
             check("first")
             conn._mode_reader()     # cheating

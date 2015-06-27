@@ -28,4 +28,7 @@ shift
 ./tests.py ${DEBUG} \
            -s "${SERVER}" -p "${PORT}" \
            -g "${GROUP}" -D "${DOMAIN}" -l "${LOCALPORT}" \
-           -T "./trigger" "$@"
+           -T "./trigger" \
+           -a test_newgroups:create="really ${PREFIX}/bin/ctlinnd -s newgroup %s" \
+           -a test_newgroups:remove="really ${PREFIX}/bin/ctlinnd -s rmgroup %s" \
+           "$@"

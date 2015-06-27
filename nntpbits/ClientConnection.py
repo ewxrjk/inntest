@@ -519,7 +519,28 @@ class ClientConnection(nntpbits.Connection):
     # -------------------------------------------------------------------------
     # NEWGROUPS (3977 7.3)
 
-    #TODO
+    def newgroups(self, date):
+        """n.newgroups(DATE) -> LIST
+
+        Returns a list of groups created since DATE.
+
+        DATE may be any of:
+        ["YYMMDD", "HHMMSS"]
+        ["YYYYMMDD", "HHMMSS"]
+        "YYYYMMDDHHMMSS"
+        A float or int, as returned by time.time()
+
+        The first two are the native format for NNTP NEWGROUPS; the
+        third is the result of the DATE command and the date() method.
+
+        """
+        date=ClientConnection._newstuff_date(date)
+        self._require_reader()
+        code,arg=self.transact([b'NEWGROUPS', date[:-6], date[-6:]])
+        if code==231:
+            return self.receive_lines()
+        else:
+            raise Exception("NEWGROUPS command failed: %s", self.response)
 
     # -------------------------------------------------------------------------
     # NEWNEWS (3977 7.4)
@@ -539,17 +560,20 @@ class ClientConnection(nntpbits.Connection):
         The first two are the native format for NNTP NEWNEWS; the
         third is the result of the DATE command and the date() method.
         """
-        if isinstance(date, list):
-            date=b''.join(nntpbits._normalize(date))
-        elif isinstance(date, int) or isinstance(date, float):
-            date=time.strftime("%Y%m%d%H%M%S", time.gmtime(date))
-        date=nntpbits._normalize(date)
+        date=ClientConnection._newstuff_date(date)
         self._require_reader()
         code,arg=self.transact([b'NEWNEWS', wildmat, date[:-6], date[-6:]])
         if code==230:
             return self.receive_lines()
         else:
             raise Exception("NEWNEWS command failed: %s", self.response)
+
+    def _newstuff_date(date):
+        if isinstance(date, list):
+            date=b''.join(nntpbits._normalize(date))
+        elif isinstance(date, int) or isinstance(date, float):
+            date=time.strftime("%Y%m%d%H%M%S", time.gmtime(date))
+        return nntpbits._normalize(date)
 
     # -------------------------------------------------------------------------
     # LIST (3977 7.6, 6048)

@@ -51,13 +51,13 @@ def main(argv):
             print(test_name)
         return
     if len(r.TEST) == 0:
-        r.TEST=all_testst
+        r.TEST=all_tests
     else:
         for test in r.TEST:
             if test not in all_tests:
                 logging.error("No such test as %s" % test)
                 sys.exit(1)
-    args={}
+    args=dict([test,{}] for test in all_tests)
     for a in r.ARGS:
         m=re.match('^([^:]+):([^=]+)=(.*)$', a)
         test=m.group(1)
@@ -69,7 +69,7 @@ def main(argv):
                 logging.warn("Test %s will not be run" % test)
         arg=m.group(2)
         value=m.group(3)
-        args.setdefault(test, {})[arg]=value
+        args[test][arg]=value
     logging.basicConfig(level=r.debug)
     t=cls(r.server, r.port, group=r.group, email=r.email, domain=r.domain,
           localserver=('*', r.localport), timelimit=r.timelimit,

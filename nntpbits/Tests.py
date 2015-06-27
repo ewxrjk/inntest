@@ -96,22 +96,34 @@ class Tests(object):
         self.sequence=0
         self.lock=threading.Lock()
 
-    def _unique(self):
+    def _unique(self, alphabet=None):
         """t._unique() -> BYTES
 
         Returns a unique (but not necessarily unpredictable) string.
         This is used for picking message IDs.
 
+        Optional argument:
+        alphabet -- set of characters that may appear in the result.
+
         """
-        with self.lock:
-            sequence=self.sequence
-            self.sequence+=1
-        h=hashlib.sha256()
-        h.update(self.seed)
-        h.update(struct.pack("<q", sequence))
-        # base64 is 3 bytes into 4 characters, so truncate to a
-        # multiple of 3.
-        return base64.b64encode(h.digest()[:18])
+        while True:
+            with self.lock:
+                sequence=self.sequence
+                self.sequence+=1
+            h=hashlib.sha256()
+            h.update(self.seed)
+            h.update(struct.pack("<q", sequence))
+            # base64 is 3 bytes into 4 characters, so truncate to a
+            # multiple of 3.
+            unique=base64.b64encode(h.digest()[:18])
+            suitable=True
+            if alphabet is not None:
+                for u in unique:
+                    if u not in alphabet:
+                        suitable=False
+                        break
+            if suitable:
+                return unique
 
     def _ident(self, ident=None):
         """t._ident([IDENT]) -> IDENT
@@ -931,3 +943,46 @@ class Tests(object):
             for ident,article in articles:
                 if ident not in new_idents:
                     raise Exception("NEWNEWS: did not find %s" % ident)
+
+    # -------------------------------------------------------------------------
+    # Testing NEWGROUPS
+
+    def test_newgroups(self,
+                       create="ctlinnd -s newgroup %s",
+                       remove="ctlinnd -s rmgroup %s"):
+        """t.test_newgroups(CREATE, REMOVE)
+
+        Test NEWGROUPS.
+
+        The CREATE argument should contain the string '%s', which will
+        be substituted with a newsgroup name to create.  Similarly
+        REMOVE will be used to remove it.
+
+        """
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn._require_reader() # cheating
+            start=conn.date()
+            while start==conn.date():
+                time.sleep(0.25)
+            group=self.hierarchy+b'.'+self._unique(b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+            cmd=create % str(group, 'ascii')
+            logging.info("executing: %s" % cmd)
+            rc=os.system(cmd)
+            if rc != 0:
+                raise Exception("Create command failed (%d)" % rc)
+            try:
+                found=False
+                for line in conn.newgroups(start):
+                    m=Tests._list_active_re.match(line)
+                    if not m:
+                        raise Exception("NEWGROUPS: malformed response: %s" % line)
+                    if m.group(1)==group:
+                        found=True
+                        if not found:
+                            raise Exception("NEWGROUPS: new group not listed")
+            finally:
+                cmd=remove % str(group, 'ascii')
+                logging.info("executing: %s" % cmd)
+                rc=os.system(cmd)
+                if rc != 0:
+                    raise Exception("Remove command failed (%d)" % rc)

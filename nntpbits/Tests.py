@@ -713,7 +713,7 @@ class Tests(object):
                 raise Exception("%s: non-matching body: '%s' vs '%s'"
                                     % (cmd, body, r_body))
 
-    _header_re=re.compile(b'^([a-zA-Z0-9\\-]+):\\s+(.*)$')
+    _header_re=re.compile(b'^([a-zA-Z0-9\\-]+:)\\s+(.*)$')
 
     @staticmethod
     def _parse_article(article):
@@ -722,6 +722,9 @@ class Tests(object):
         Parses an article (as a list of bytes objects) into the header
         (a dict mapping lower-cases bytes header names to values), a
         body (a list of bytes objects) and the message ID.
+
+        As with ClientConnection.parse_overview, header names include
+        the trailing colon.
 
         The body and/or message ID are None if missing.
 
@@ -746,7 +749,7 @@ class Tests(object):
                 raise Exception("Malformed article: %s" % article)
             field=m.group(1).lower()
             header[field]=m.group(2)
-        return header,body,header[b'message-id']
+        return header,body,header[b'message-id:']
 
     def _post_articles(self, conn):
         """t._post_articles(CONN)

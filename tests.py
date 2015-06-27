@@ -72,9 +72,9 @@ def main(argv):
             failed.append(test_name)
     logging.info("%d/%d tests succeeded" % (ok, tested))
     if len(skipped) > 0:
-        logging.info("skipped tests: %s" % ", ".join(skipped))
+        logging.info("SKIPPED tests: %s" % ", ".join(skipped))
     if len(failed) > 0:
-        logging.error("failed tests: %s" % ", ".join(failed))
+        logging.error("FAILED tests: %s" % ", ".join(failed))
     else:
         logging.info("SUCCESS")
     return 1 if ok + len(skipped) < tested else 0

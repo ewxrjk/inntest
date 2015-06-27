@@ -55,23 +55,29 @@ def main(argv):
           trigger=r.trigger)
     tested=0
     ok=0
+    skipped=[]
     failed=[]
     for test_name in r.TEST:
         logging.info("Running test %s" % test_name)
         try:
             tested+=1
-            t.run_test(test_name)
-            ok+=1
+            state=t.run_test(test_name)
+            if state=='skip':
+                skipped.append(test_name)
+            else:
+                ok+=1
         except Exception as e:
             logging.error("Test %s failed: %s" % (test_name, e))
             logging.error("%s" % traceback.format_exc())
             failed.append(test_name)
     logging.info("%d/%d tests succeeded" % (ok, tested))
+    if len(skipped) > 0:
+        logging.info("skipped tests: %s" % ", ".join(skipped))
     if len(failed) > 0:
         logging.error("failed tests: %s" % ", ".join(failed))
     else:
         logging.info("SUCCESS")
-    return 1 if ok < tested else 0
+    return 1 if ok + len(skipped) < tested else 0
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

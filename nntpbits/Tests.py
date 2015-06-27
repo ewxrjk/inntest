@@ -109,6 +109,8 @@ class Tests(object):
         h=hashlib.sha256()
         h.update(self.seed)
         h.update(struct.pack("<q", sequence))
+        # base64 is 3 bytes into 4 characters, so truncate to a
+        # multiple of 3.
         return base64.b64encode(h.digest()[:18])
 
     def _ident(self, ident=None):
@@ -260,9 +262,11 @@ class Tests(object):
             next_trigger=0
             limit=time.time()+self.timelimit
             while time.time() < limit:
+                # See if the post has turned up
                 with s.lock:
                     if ident in s.ihave_submitted:
                         break
+                # Repeat the trigger if it's not helping
                 if (self.trigger is not None
                        and next_trigger <= time.time()):
                     logging.info("execute: %s" % self.trigger)
@@ -321,6 +325,7 @@ class Tests(object):
 
         Returns True on success and False on failure.
         """
+        # Need a nondefault pathhost so it will propagate back to us
         self._check_post_propagates(ident, description,
                                     self.test_ihave,
                                     _pathhost=b'nonesuch.' + self.domain)
@@ -342,6 +347,7 @@ class Tests(object):
             def check():
                 for kw in conn.capabilities_list():
                     self._test_list(conn, kw)
+                # Default subcommand is ACTIVE
                 if b'ACTIVE' in conn.capabilities_list():
                     self._test_list(conn, None)
             check()
@@ -370,6 +376,7 @@ class Tests(object):
                         b'NEWSGROUPS',
                         b'COUNTS',
                         b'SUBSCRIPTIONS'])
+    # LIST subcommands that we'll accept a 503 response for
     _list_optional=set([ b'MOTD',
                          b'COUNT',
                          b'DISTRIBUTIONS',
@@ -400,6 +407,8 @@ class Tests(object):
         pattern to supply.
 
         """
+        # verify(GROUP) -> BOOL tests whether the group is acceptable
+        # based on WILDMAT.
         if wildmat is None:
             verify=lambda s: True
         else:
@@ -418,6 +427,7 @@ class Tests(object):
             if kw in Tests._list_optional:
                 return
             raise Exception("LIST %s: unexpected 503" % kw)
+        # Find the regexp to verify/parse lines
         name='list_'+str(kw, 'ascii').replace('.', '_').lower()
         regex_name='_'+name+'_re'
         regex=getattr(self, regex_name, None)
@@ -437,6 +447,11 @@ class Tests(object):
             return method(lines, kw)
 
     def _check_list_overview_fmt(self, lines, kw):
+        """t._check_list_overview_fmt(LINES, KW)
+
+        Verify that the OVERFMT.FMT data is valid.
+
+        """
         _overview_initial=[b'Subject:',
                            b'From:',
                            b'Date:',
@@ -459,6 +474,12 @@ class Tests(object):
 
     @staticmethod
     def _wildmat_pattern_to_re(pattern):
+        """t._wildmat_pattern_to_re(PATTERN) -> RE
+
+        Convert a single wildmat pattern (essentially, a restricted
+        version of glob syntax) to a compiled regexp.
+
+        """
         pos=0
         regex='^'
         for ch in pattern:
@@ -473,6 +494,13 @@ class Tests(object):
 
     @staticmethod
     def _wildmat_to_method(wildmat):
+        """t._wildmat_to_method(WILDMAT) -> FUNCTION
+        where: FUNCTION(GROUP) -> BOOL
+
+        Convert a wildmat to a function that tests whether a group
+        name matches the wildmat. GROUP may be str or a bytes object.q
+
+        """
         if isinstance(wildmat, bytes):
             wildmat=str(wildmat, 'UTF-8')
         elements=[]

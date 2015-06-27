@@ -870,3 +870,42 @@ class Tests(object):
                 self._check_article(b'OVER', ident, article,
                                     ov[ident], None, ov[ident][b'message-id:'],
                                     allowmissing)
+
+    # -------------------------------------------------------------------------
+    # Testing HDR
+
+    def test_hdr_number(self):
+        """t.test_hdr_id()
+
+        Test HDR lookup by number.
+
+        """
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn._require_reader() # cheating
+            if not b'HDR' in conn.capabilities():
+                return 'skip'
+            articles=self._post_articles(conn)
+            count,low,high=conn.group(self.group)
+            ident_to_number={}
+            number_to_ident=dict(conn.hdr(b'Message-ID', low, high))
+            for number in number_to_ident:
+                ident_to_number[number_to_ident[number]]=number
+            for header in [b'Subject',
+                           b'Newsgroups',
+                           b'From',
+                           b'Keywords',
+                           b'Date',
+                           b'Organization',
+                           b'User-Agent']:
+                number_to_header=dict(conn.hdr(header, low, high))
+                for ident,article in articles:
+                    r_value=number_to_header[ident_to_number[ident]]
+                    for line in article:
+                        if line==b'':
+                            break
+                        m=Tests._header_re.match(line)
+                        if m.group(1) == header:
+                            value=m.group(2)
+                            if r_value != value:
+                                raise Exception("HDR: non-matching %s header: '%s' vs '%s'"
+                                                % (field, value, r_value))

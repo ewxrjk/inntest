@@ -73,14 +73,19 @@ class Connection(object):
         pass
 
     def send_line(self, line, flush=True):
-        """p.send_line(BYTES)
+        """p.send_line(LINE)
 
         Send a bytes object.  The protocol EOL sequence is appended.
 
-        If BYTES is actually a string then it is converted to a bytes
+        If LINE is actually a string then it is converted to a bytes
         object using the ASCII encoding.
 
+        If LINE is a list then the elements are joined together with
+        spaces.
+
         """
+        if isinstance(line, list):
+            line=b' '.join(nntpbits._normalize(line))
         logging.debug("SEND %s" % line)
         self.w.write(nntpbits._normalize(line))
         self.w.write(b'\r\n')

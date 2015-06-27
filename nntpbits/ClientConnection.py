@@ -589,6 +589,7 @@ class ClientConnection(nntpbits.Connection):
         article doesn't exist then None is returned.
 
         """
+        self._require_reader()
         if high is not None:
             code,arg=self.transact(bytes('OVER %d-%d' % (low, high), 'ascii'))
         else:
@@ -597,7 +598,7 @@ class ClientConnection(nntpbits.Connection):
             return self.receive_lines()
         elif code == 423:
             return []
-        elif code == 430:
+        elif code == 430 or code == 420:
             return None
         else:
             raise Exception("OVER command failed: %s" % self.response)
@@ -667,6 +668,7 @@ class ClientConnection(nntpbits.Connection):
         the RFC3977 values of :bytes and :lines.
 
         """
+        self._require_reader()
         if self.overview_fmt is None:
             self._list_overview_fmt()
         return self.overview_fmt
@@ -674,7 +676,46 @@ class ClientConnection(nntpbits.Connection):
     # -------------------------------------------------------------------------
     # HDR (3977 8.5, 8.6)
 
-    #TODO
+    _hdr_re=re.compile(b'^(\\d+) (.*)$')
+
+    def hdr(self, header, low, high=None):
+        """n.over(HEADER, LOW, HIGH) -> LIST
+        n.over(HEADER, ID) -> LIST
+
+        Return headers for a range of messages.  Each list element is
+        a list containing the article number and header value.
+
+        Note that LOW and HIGH are _inclusive_ bounds, unlike the
+        usual Python idiom.  If no articles are in the range then []
+        is returned, even if the server returned 423.
+
+        If an message ID is passed then only overview data for that
+        message is returned (i.e. as a single-element list).  If the
+        article doesn't exist then None is returned.
+
+        """
+        self._require_reader()
+        cmd=[b'HDR', nntpbits._normalize(header)]
+        if high is not None:
+            cmd.append(bytes("%d-%d" % (low, high), 'ascii'))
+        else:
+            cmd.append(nntpbits._normalize(low))
+        code,argument=self.transact(cmd)
+        if code == 225:
+            lines=self.receive_lines()
+            result=[]
+            for line in lines:
+                m=ClientConnection._hdr_re.match(line)
+                if not m:
+                    raise Exception("HDR response malformed: %s" % lie)
+                result.append([int(m.group(1)), m.group(2)])
+            return result
+        elif code == 423:
+            return []
+        elif code == 430 or code == 420:
+            return None
+        else:
+            raise Exception("HDR command failed: %s" % self.response)
 
     # -------------------------------------------------------------------------
     # MODE STREAM (4644 2.3)

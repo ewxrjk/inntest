@@ -48,7 +48,24 @@ Either set `VALGRIND=true` in `config`, or pass it in as environment variable:
 Coverage
 --------
 
-...todo...
+You can enable code coverage recording, with a suitable compiler.
+Example:
+
+    CC="gcc --coverage" CFLAGS="-g -O0" ./test-all
+
+Note that since `./build` does `make check` the results will include
+coverage information from that too.  If you want to exclude this data
+by manually running `./build` with options above and then remove the
+`*.gcda` files:
+
+    find ../inn-build -name '*.gcda' -delete
+
+gcov likes to write its `*.gcda` files into the build directory, so
+make sure that it, and all its subdirectories, are writable by the
+user the news server runs as.
+
+I use [Viewgcov](https://github.com/ewxrjk/viewgcov) to inspect the
+results.  Start it in the build directory and select File->Refresh.
 
 Sanitizers
 ----------

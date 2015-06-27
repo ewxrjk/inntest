@@ -434,11 +434,10 @@ class Tests(object):
                     raise Exception("LIST %s: malformed line: %s" % (kw, line))
                 if not verify(m.group(1)):
                     raise Exception("LIST %s: malformed group name: %s" % (kw, line))
-            return
         method_name='_check_' + name
         method=getattr(self, method_name, None)
         if method is None:
-            logging.error("don't know how to check LIST %s" % (kw))
+            logging.debug("don't know how to check LIST %s" % (kw))
         else:
             return method(lines, kw)
 

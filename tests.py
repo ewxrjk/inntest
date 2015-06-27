@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import argparse,logging,sys,traceback
+import argparse,logging,re,sys,traceback
 import nntpbits
 
 def main(argv):
@@ -36,6 +36,8 @@ def main(argv):
                    type=int, default=1119)
     p.add_argument('-t', '--timelimit', help='Per-test time limit',
                    type=int, default=60)
+    p.add_argument('-a', '--arg', help="TEST:ARG=VALUE per-test argument",
+                   type=str, dest='ARGS', action='append', default=[])
     p.add_argument('-d', '--debug', help='Enable debugging',
                    action='store_const', const='DEBUG', default='INFO')
     p.add_argument('TEST', help='Tests to run', nargs='*')
@@ -43,12 +45,31 @@ def main(argv):
                    action='store_true')
     r=p.parse_args(argv)
     cls=nntpbits.Tests
+    all_tests=cls.list_tests()
     if r.list:
-        for test_name in cls.list_tests():
+        for test_name in all_tests:
             print(test_name)
         return
     if len(r.TEST) == 0:
-        r.TEST=cls.list_tests()
+        r.TEST=all_testst
+    else:
+        for test in r.TEST:
+            if test not in all_tests:
+                logging.error("No such test as %s" % test)
+                sys.exit(1)
+    args={}
+    for a in r.ARGS:
+        m=re.match('^([^:]+):([^=]+)=(.*)$', a)
+        test=m.group(1)
+        if test not in r.TEST:
+            if test not in all_tests:
+                logging.error("No such test as %s" % test)
+                sys.exit(1)
+            else:
+                logging.warn("Test %s will not be run" % test)
+        arg=m.group(2)
+        value=m.group(3)
+        args.setdefault(test, {})[arg]=value
     logging.basicConfig(level=r.debug)
     t=cls(r.server, r.port, group=r.group, email=r.email, domain=r.domain,
           localserver=('*', r.localport), timelimit=r.timelimit,
@@ -61,7 +82,7 @@ def main(argv):
         logging.info("Running test %s" % test_name)
         try:
             tested+=1
-            state=t.run_test(test_name)
+            state=t.run_test(test_name, **args[test_name])
             if state=='skip':
                 skipped.append(test_name)
             else:

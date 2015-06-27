@@ -414,7 +414,7 @@ class Tests(object):
             verify=lambda s: True
         else:
             if kw not in self._list_wildmat:
-                return
+                return 'skip'
             verify=Tests._wildmat_to_function(wildmat)
         lines=conn.list(kw, wildmat)
         if kw is None:
@@ -824,13 +824,16 @@ class Tests(object):
 
         Test OVER lookup by <message id>.
 
+        NOTE: this has never been run since INN doesn't support OVER
+        MSGID.
+
         """
         with nntpbits.ClientConnection((self.address, self.port)) as conn:
             conn._require_reader() # cheating
             if not b'OVER' in conn.capabilities():
-                return
+                return 'skip'
             if not b'MSGID' in conn.capability_arguments(b'OVER'):
-                return
+                return 'skip'
             articles=self._post_articles(conn)
             count,low,high=conn.group(self.group)
             for ident,article in articles:
@@ -848,7 +851,7 @@ class Tests(object):
         with nntpbits.ClientConnection((self.address, self.port)) as conn:
             conn._require_reader() # cheating
             if not b'OVER' in conn.capabilities():
-                return
+                return 'skip'
             articles=self._post_articles(conn)
             count,low,high=conn.group(self.group)
             overviews=conn.over(low,high)

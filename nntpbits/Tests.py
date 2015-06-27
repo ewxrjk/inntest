@@ -414,7 +414,7 @@ class Tests(object):
         else:
             if kw not in self._list_wildmat:
                 return
-            verify=Tests._wildmat_to_method(wildmat)
+            verify=Tests._wildmat_to_function(wildmat)
         lines=conn.list(kw, wildmat)
         if kw is None:
             kw=b'ACTIVE'
@@ -501,8 +501,8 @@ class Tests(object):
         return re.compile(regex)
 
     @staticmethod
-    def _wildmat_to_method(wildmat):
-        """t._wildmat_to_method(WILDMAT) -> FUNCTION
+    def _wildmat_to_function(wildmat):
+        """t._wildmat_to_function(WILDMAT) -> FUNCTION
         where: FUNCTION(GROUP) -> BOOL
 
         Convert a wildmat to a function that tests whether a group
@@ -519,7 +519,7 @@ class Tests(object):
             else:
                 sense=True
             elements.append([sense, Tests._wildmat_pattern_to_re(pattern)])
-        def method(s):
+        def function(s):
             if isinstance(s, bytes):
                 s=str(s, 'UTF-8')
             latest=False
@@ -527,7 +527,7 @@ class Tests(object):
                 if regex.match(s):
                     latest=sense
             return latest
-        return method
+        return function
 
     # -------------------------------------------------------------------------
     # Testing DATE

@@ -289,6 +289,7 @@ class ClientConnection(nntpbits.Connection):
             return self._select(b'STAT', nntpbits._normalize(ident))
 
     _stat_re=re.compile(b'^(\\d+) +(<[^>]+>)( +.*)?$')
+    _select_noarticle=set([420, 421, 422, 423])
 
     def _select(self, *cmd):
         code,arg=self.transact(b' '.join(cmd))
@@ -298,7 +299,7 @@ class ClientConnection(nntpbits.Connection):
                 raise Exception("%s command malformed response: %s"
                         % (str(cmd[0]), arg))
             return (int(m.group(1)), m.group(2), None)
-        if code in [420, 421, 422, 423]:
+        if code in ClientConnection._select_noarticle:
             return None, None, None
         raise Exception("%s command failed: %s" % (str(cmd[0]), self.response))
 

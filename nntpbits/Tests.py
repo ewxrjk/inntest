@@ -365,11 +365,11 @@ class Tests(object):
         self.test_list(wildmat=hierarchy+b'.*')
 
     # LIST subcommands that can take a wildmat
-    _list_wildmat=[ b'ACTIVE',
-                    b'ACTIVE.TIMES',
-                    b'NEWSGROUPS',
-                    b'COUNTS',
-                    b'SUBSCRIPTIONS']
+    _list_wildmat=set([ b'ACTIVE',
+                        b'ACTIVE.TIMES',
+                        b'NEWSGROUPS',
+                        b'COUNTS',
+                        b'SUBSCRIPTIONS'])
 
     # Regexps that LIST subcommand output must match
     # For subcommands that can take a wildmat, first capture

@@ -71,7 +71,7 @@ def main(argv):
         arg=m.group(2)
         value=m.group(3)
         args[test][arg]=value
-    t=cls(r.server, r.port, group=r.group, email=r.email, domain=r.domain,
+    t=cls((r.server, r.port), group=r.group, email=r.email, domain=r.domain,
           localserver=('*', r.localport), timelimit=r.timelimit,
           trigger=r.trigger)
     tested=0

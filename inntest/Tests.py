@@ -48,9 +48,9 @@ class TestServer(nntpbits.NewsServer):
         return (235, b'OK')
 
 class Tests(object):
-    """nntpbits.Tests(ADDRESS, PORT) -> test state object
+    """nntpbits.Tests(ADDRESS) -> test state object
 
-    ADDRESS, PORT is the news server to test.
+    ADDRESS is a (name,port) tuple for the news server to test.
 
     Optional keyword arguments:
     group -- newsgroup for testing.  Default local.test
@@ -70,7 +70,7 @@ class Tests(object):
     GROUP and EMAIL may be bytes objects or strings.
 
     """
-    def __init__(self, address, port,
+    def __init__(self, address,
                  domain=b'test.terraraq.uk',
                  email=b'invalid@invalid.invalid',
                  group=b"local.test",
@@ -79,7 +79,6 @@ class Tests(object):
                  timelimit=60,
                  trigger=None):
         self.address=address
-        self.port=port
         self.group=nntpbits._normalize(group)
         if hierarchy is None:
             self.hierarchy=b'.'.join(self.group.split(b'.')[:-1])
@@ -221,7 +220,7 @@ class Tests(object):
                  b'Message-ID: ' + ident,
                  b'',
                  b'nntpbits.Test test posting']
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn.post(article)
             self._check_posted(conn, ident)
 
@@ -324,7 +323,7 @@ class Tests(object):
                  b'Date: ' + self._date(),
                  b'',
                  b'nntpbits.Test test posting']
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn.ihave(article)
             self._check_posted(conn, ident)
 
@@ -360,7 +359,7 @@ class Tests(object):
         syntax.  Then (if possible) switches to reader mode and
         repeats the exercise.
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             def check():
                 subcommands=conn.capability_arguments(b'LIST')
                 for kw in subcommands:
@@ -409,7 +408,7 @@ class Tests(object):
         Tests extra details of the LIST HEADERS command
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn._require_reader()
             subcommands=conn.capability_arguments(b'LIST')
             if b'HEADERS' not in subcommands:
@@ -589,7 +588,7 @@ class Tests(object):
         clock is reasonably accurate.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             now=int(time.time())
             d=conn.date()
             m=re.match(b'^(\\d\\d\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)$',
@@ -622,7 +621,7 @@ class Tests(object):
         Tests the HELP command.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             def check(which):
                 lines=conn.help()
                 for line in lines:
@@ -644,7 +643,7 @@ class Tests(object):
         Tests the CAPABILITIES command.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             def check(which):
                 cap = conn.capabilities()
                 if len(cap) == 0:
@@ -681,7 +680,7 @@ class Tests(object):
         Test article lookup by <message id>.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             articles=self._post_articles(conn)
             for cmd,parse in Tests._article_lookup_commands():
                 logging.debug("test_article_id %s" % cmd)
@@ -701,7 +700,7 @@ class Tests(object):
         Test article lookup by number.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             articles=self._post_articles(conn)
             count,low,high=conn.group(self.group)
             ident_to_number={}
@@ -876,7 +875,7 @@ class Tests(object):
         MSGID.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn._require_reader() # cheating
             if not b'OVER' in conn.capabilities():
                 logging.warn("SKIPPING TEST because no OVER capability")
@@ -898,7 +897,7 @@ class Tests(object):
         Test OVER lookup by number.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn._require_reader() # cheating
             if not b'OVER' in conn.capabilities():
                 logging.warn("SKIPPING TEST because no OVER capability")
@@ -931,7 +930,7 @@ class Tests(object):
         Test HDR lookup by number.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn._require_reader() # cheating
             if not b'HDR' in conn.capabilities():
                 logging.warn("SKIPPING TEST because no HDR capability")
@@ -971,7 +970,7 @@ class Tests(object):
         Test NEWNEWS.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn._require_reader() # cheating
             if not b'NEWNEWS' in conn.capabilities():
                 logging.warn("SKIPPING TEST because no NEWNEWS capability")
@@ -1008,7 +1007,7 @@ class Tests(object):
         REMOVE will be used to remove it.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn._require_reader() # cheating
             start=conn.date()
             while start==conn.date():
@@ -1045,7 +1044,7 @@ class Tests(object):
         Test LISTGROUP.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn._require_reader() # cheating
             if not b'HDR' in conn.capabilities():
                 logging.warn("SKIPPING TEST because no HDR capability")
@@ -1079,7 +1078,7 @@ class Tests(object):
         Test errors for nonexistent articles.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn._require_reader() # cheating
             for cmd in Tests._article_commands:
                 code,arg=conn.transact([cmd, self._ident()])
@@ -1104,7 +1103,7 @@ class Tests(object):
         Test errors for nonexistent groups
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn._require_reader() # cheating
             for cmd in [b'GROUP', b'LISTGROUP']:
                 code,arg=conn.transact([cmd, self._groupname()])
@@ -1118,7 +1117,7 @@ class Tests(object):
         Test errors for commands issued outside a group.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn._require_reader() # cheating
             for cmd in [b'NEXT', b'LAST']:
                 code,arg=conn.transact(cmd)
@@ -1148,7 +1147,7 @@ class Tests(object):
         Test errors for group navigation commands.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn._require_reader() # cheating
             count,low,high=conn.group(self.group)
             for cmd in Tests._article_commands:
@@ -1181,7 +1180,7 @@ class Tests(object):
 
         """
         skip='skip'
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn._require_reader() # cheating
             count,low,high=conn.group(self.group)
             if b'OVER' in conn.capabilities():
@@ -1215,7 +1214,7 @@ class Tests(object):
 
         """
         ret=[None]
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             def check(which):
                 code,arg=conn.transact(b'NOTINNNTP')
                 if code!=500:
@@ -1287,7 +1286,7 @@ class Tests(object):
         Test error behavior for bad local postings.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             conn._require_reader()
             return self._test_errors_bad_post(conn, b'POST', 340, 240, 441, [])
 
@@ -1297,7 +1296,7 @@ class Tests(object):
         Test error behavior for bad post injections.
 
         """
-        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+        with nntpbits.ClientConnection(self.address) as conn:
             return self._test_errors_bad_post(conn, b'IHAVE', 335, 235, 437,
                                               [b'Path: '+self.domain])
 

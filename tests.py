@@ -78,6 +78,7 @@ def main(argv):
     ok=0
     skipped=[]
     failed=[]
+    expected_fail=[]
     for test_name in r.TEST:
         logging.info("Running test %s" % test_name)
         try:
@@ -85,6 +86,8 @@ def main(argv):
             state=t.run_test(test_name, **args[test_name])
             if state=='skip':
                 skipped.append(test_name)
+            elif state=='expected_fail':
+                expected_fail.append(test_name)
             else:
                 ok+=1
         except Exception as e:
@@ -94,8 +97,12 @@ def main(argv):
     logging.info("%d/%d tests succeeded" % (ok, tested))
     if len(skipped) > 0:
         logging.warn("SKIPPED tests: %s" % ", ".join(skipped))
+    if len(expected_fail) > 0:
+        logging.warn("EXPECTED FAIL tests: %s" % ", ".join(expected_fail))
     if len(failed) > 0:
         logging.error("FAILED tests: %s" % ", ".join(failed))
+    elif len(expected_fail) > 0:
+        logging.info("QUALIFIED SUCCESS")
     else:
         logging.info("SUCCESS")
     return 1 if ok + len(skipped) < tested else 0

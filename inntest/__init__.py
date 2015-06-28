@@ -18,7 +18,22 @@
 
 """
 from inntest.utils import *
-from inntest.Tests import *
+
+from inntest.article import *
+from inntest.capabilities import *
+from inntest.date import *
+from inntest.errors_commands import *
+from inntest.errors_group import *
+from inntest.errors_overview import *
+from inntest.errors_post import *
+from inntest.hdr import *
+from inntest.help import *
+from inntest.listgroup import *
+from inntest.list import *
+from inntest.newgroups import *
+from inntest.newnews import *
+from inntest.over import *
+from inntest.post import *
 
 address=(None, 119)
 domain=b'test.terraraq.uk'

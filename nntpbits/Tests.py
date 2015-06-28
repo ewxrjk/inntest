@@ -386,6 +386,21 @@ class Tests(object):
             hierarchy=self.hierarchy
         self.test_list(wildmat=hierarchy+b'.*')
 
+    def test_list_wildmat_single(self, hierarchy=None):
+        """t.test_list_wildmat_single()
+
+        Tests the LIST command with single-match wildmats
+
+        Uses CAPABILITIES to enumerate all the LIST subcommands
+        supported and, for those that can accept a wildmat argument,
+        verifies that their output follows the right syntax.  Then (if
+        possible) switches to reader mode and repeats the exercise.
+
+        This reflects an optimization in INN's nnrpd.
+
+        """
+        self.test_list(wildmat=self.group)
+
     def test_list_headers(self):
         """t.test_list_wildmat()
 

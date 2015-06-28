@@ -469,9 +469,7 @@ class Tests(object):
                     raise Exception("LIST %s: malformed group name: %s" % (kw, line))
         method_name='_check_' + name
         method=getattr(self, method_name, None)
-        if method is None:
-            logging.debug("don't know how to check LIST %s" % (kw))
-        else:
+        if method is not None:
             return method(lines, kw)
 
     def _check_list_overview_fmt(self, lines, kw):

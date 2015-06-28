@@ -17,7 +17,6 @@
 """NNTP support utilities
 
 Classes:
-  nntpbits.Tests -- NNTP server tests
   nntpbits.NewsServer -- base class for news servers
   nntpbits.ClientConnection -- an NNTP client connection
   nntpbits.ServerConnection -- an NNTP server connection
@@ -27,7 +26,6 @@ from nntpbits.Connection import *
 from nntpbits.ClientConnection import *
 from nntpbits.ServerConnection import *
 from nntpbits.NewsServer import *
-from nntpbits.Tests import *
 import threading,time
 
 def _normalize(s):

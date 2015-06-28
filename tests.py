@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import argparse,logging,re,sys,traceback
-import nntpbits
+import nntpbits,inntest
 
 def main(argv):
     p=argparse.ArgumentParser()
@@ -45,7 +45,7 @@ def main(argv):
                    action='store_true')
     r=p.parse_args(argv)
     logging.basicConfig(level=r.debug)
-    cls=nntpbits.Tests
+    cls=inntest.Tests
     all_tests=cls.list_tests()
     if r.list:
         for test_name in all_tests:

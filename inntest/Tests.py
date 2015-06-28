@@ -15,99 +15,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import inntest,nntpbits
-import base64,calendar,hashlib,inspect,logging,os,re,struct,threading,time
-
-class TestServer(nntpbits.NewsServer):
-    """nntpbits.TestServer() -> SERVER
-
-    News server class that accepts all articles fed to it.
-    """
-    def __init__(self, conncls=nntpbits.ServerConnection):
-        nntpbits.NewsServer.__init__(self, conncls=conncls)
-        self.ihave_checked=[]
-        self.ihave_submitted={}
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, et, ev, etb):
-        logging.debug("TestServer.__exit__: %s / %s / %s" % (et, ev, etb))
-        nntpbits.stop()
-        return False
-
-    def ihave_check(self, ident):
-        with self.lock:
-            self.ihave_checked.append(ident)
-        return (335, b'OK')
-
-    def ihave(self, ident, article):
-        with self.lock:
-            if ident in self.ihave_submitted:
-                return (435, b'Duplicate')
-            self.ihave_submitted[ident]=article
-        return (235, b'OK')
+import calendar,inspect,logging,os,re,time
 
 class Tests(object):
     """nntpbits.Tests(ADDRESS) -> test state object
 
     """
-
-    def _unique(self, alphabet=None):
-        """t._unique() -> BYTES
-
-        Returns a unique (but not necessarily unpredictable) string.
-        This is used for picking message IDs.
-
-        Optional argument:
-        alphabet -- set of characters that may appear in the result.
-
-        """
-        while True:
-            with inntest.lock:
-                sequence=inntest.sequence
-                inntest.sequence+=1
-            h=hashlib.sha256()
-            h.update(inntest.seed)
-            h.update(struct.pack("<q", sequence))
-            # base64 is 3 bytes into 4 characters, so truncate to a
-            # multiple of 3.
-            unique=base64.b64encode(h.digest()[:18])
-            suitable=True
-            if alphabet is not None:
-                for u in unique:
-                    if u not in alphabet:
-                        suitable=False
-                        break
-            if suitable:
-                return unique
-
-    def _groupname(self):
-        return inntest.hierarchy+b'.'+self._unique(b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-
-    def _ident(self, ident=None):
-        """t._ident([IDENT]) -> IDENT
-
-        Returns a message ID.  If IDENT is None, one is picked;
-        otherwise IDENT is used.
-
-        """
-        if ident is None:
-            return b'<' + self._unique() + b'@' + inntest.domain + b'>'
-        else:
-            return nntpbits._normalize(ident)
-
-    def _date(self, when=None):
-        """t._date() -> BYTES
-
-        Returns the date in a format suitable for use in news
-        articles.
-
-        """
-        if when==None:
-            when=time.time()
-        return bytes(time.strftime("%a, %d %b %Y %H:%M:%S +0000",
-                                   time.gmtime(when)),
-                     'ascii')
 
     # -------------------------------------------------------------------------
     # Enumerating and running tests
@@ -136,23 +49,6 @@ class Tests(object):
         return method(*args, **kwargs)
 
     # -------------------------------------------------------------------------
-    # Local server support
-
-    def _local_server(self):
-        """s._local_server() -> SERVER
-
-        Create an nntpbits.TestServer and bind it to the local server
-        address.  This is used by propagation tests.
-
-        """
-        ls=TestServer()
-        ls.listen_address(inntest.localserveraddress[0],
-                          inntest.localserveraddress[1],
-                          wait=False,
-                          daemon=True)
-        return ls
-
-    # -------------------------------------------------------------------------
     # Testing POST
 
     def test_post(self, ident=None, description=b"posting test"):
@@ -170,7 +66,7 @@ class Tests(object):
         Returns True on success and False on failure.
 
         """
-        ident=self._ident(ident)
+        ident=inntest.utils._ident(ident)
         article=[b'Newsgroups: ' + inntest.group,
                  b'From: ' + inntest.email,
                  b'Subject: [nntpbits] ' + nntpbits._normalize(description) + b' (ignore)',
@@ -229,8 +125,8 @@ class Tests(object):
         a message and then verify it is fed back to us.
 
         """
-        ident=self._ident(ident)
-        with self._local_server() as s:
+        ident=inntest.utils._ident(ident)
+        with inntest.utils._local_server() as s:
             do_post(*args, ident=ident, description=description, **kwargs)
             next_trigger=0
             limit=time.time()+inntest.timelimit
@@ -269,7 +165,7 @@ class Tests(object):
         Returns True on success and False on failure.
 
         """
-        ident=self._ident(ident)
+        ident=inntest.utils._ident(ident)
         if _pathhost is None:
             _pathhost=inntest.domain
         article=[b'Path: ' + _pathhost + b'!not-for-mail',
@@ -277,7 +173,7 @@ class Tests(object):
                  b'From: ' + inntest.email,
                  b'Subject: [nntpbits] ' + nntpbits._normalize(description) + b' (ignore)',
                  b'Message-ID: ' + ident,
-                 b'Date: ' + self._date(),
+                 b'Date: ' + inntest.utils._date(),
                  b'',
                  b'nntpbits.Test test posting']
         with nntpbits.ClientConnection(inntest.address) as conn:
@@ -764,57 +660,57 @@ class Tests(object):
 
         """
         articles=[]
-        ident=self._ident()
+        ident=inntest.utils._ident()
         article=[b'Newsgroups: ' + inntest.group,
                  b'From: ' + inntest.email,
                  b'Subject: [nntpbits] articles-simple (ignore)',
                  b'Message-ID: ' + ident,
                  b'',
-                 self._unique()]
+                 inntest.utils._unique()]
         conn.post(article)
         articles.append([ident, article])
 
-        ident=self._ident()
+        ident=inntest.utils._ident()
         article=[b'Newsgroups: ' + inntest.group,
                  b'From: ' + inntest.email,
                  b'Subject: [nntpbits] articles-keywords (ignore)',
                  b'Message-ID: ' + ident,
                  b'Keywords: this, that, the other',
                  b'',
-                 self._unique()]
+                 inntest.utils._unique()]
         conn.post(article)
         articles.append([ident, article])
 
-        ident=self._ident()
+        ident=inntest.utils._ident()
         article=[b'Newsgroups: ' + inntest.group,
                  b'From: ' + inntest.email,
                  b'Subject: [nntpbits] articles-date (ignore)',
                  b'Message-ID: ' + ident,
-                 b'Date: ' + self._date(),
+                 b'Date: ' + inntest.utils._date(),
                  b'',
-                 self._unique()]
+                 inntest.utils._unique()]
         conn.post(article)
         articles.append([ident, article])
 
-        ident=self._ident()
+        ident=inntest.utils._ident()
         article=[b'Newsgroups: ' + inntest.group,
                  b'From: ' + inntest.email,
                  b'Subject: [nntpbits] articles-organization (ignore)',
                  b'Message-ID: ' + ident,
-                 b'Organization: ' + self._unique(),
+                 b'Organization: ' + inntest.utils._unique(),
                  b'',
-                 self._unique()]
+                 inntest.utils._unique()]
         conn.post(article)
         articles.append([ident, article])
 
-        ident=self._ident()
+        ident=inntest.utils._ident()
         article=[b'Newsgroups: ' + inntest.group,
                  b'From: ' + inntest.email,
                  b'Subject: [nntpbits] articles-user-agent (ignore)',
                  b'Message-ID: ' + ident,
                  b'User-Agent: test.terraraq.uk',
                  b'',
-                 self._unique()]
+                 inntest.utils._unique()]
         conn.post(article)
         articles.append([ident, article])
 
@@ -969,7 +865,7 @@ class Tests(object):
             start=conn.date()
             while start==conn.date():
                 time.sleep(0.25)
-            group=self._groupname()
+            group=inntest.utils._groupname()
             cmd=create % str(group, 'ascii')
             logging.info("executing: %s" % cmd)
             rc=os.system(cmd)
@@ -1038,18 +934,18 @@ class Tests(object):
         with nntpbits.ClientConnection(inntest.address) as conn:
             conn._require_reader() # cheating
             for cmd in Tests._article_commands:
-                code,arg=conn.transact([cmd, self._ident()])
+                code,arg=conn.transact([cmd, inntest.utils._ident()])
                 if code != 430:
                     raise Exception("%s: incorrect error for nonexistent article: %s"
                                     % (cmd, conn.response))
             if (b'OVER' in conn.capabilities()
                 and b'MSGID' in conn.capability_arguments(b'OVER')):
-                code,arg=conn.transact([b'OVER', self._ident()])
+                code,arg=conn.transact([b'OVER', inntest.utils._ident()])
                 if code != 430:
                     raise Exception("OVER: incorrect error for nonexistent article: %s"
                                     % (cmd, conn.response))
             if b'HDR' in conn.capabilities():
-                code,arg=conn.transact([b'HDR', b'Subject', self._ident()])
+                code,arg=conn.transact([b'HDR', b'Subject', inntest.utils._ident()])
                 if code != 430:
                     raise Exception("OVER: incorrect error for nonexistent article: %s"
                                     % (cmd, conn.response))
@@ -1063,7 +959,7 @@ class Tests(object):
         with nntpbits.ClientConnection(inntest.address) as conn:
             conn._require_reader() # cheating
             for cmd in [b'GROUP', b'LISTGROUP']:
-                code,arg=conn.transact([cmd, self._groupname()])
+                code,arg=conn.transact([cmd, inntest.utils._groupname()])
                 if code != 411:
                     raise Exception("%s: incorrect error for nonexistent group: %s"
                                     % (cmd, conn.response))
@@ -1270,11 +1166,11 @@ class Tests(object):
                   error_response=error_response, add_body=True,
                   expected_fail=False, extras=extras):
             if ident is None:
-                ident=self._ident()
+                ident=inntest.utils._ident()
                 article=[b'Message-ID: '+ident]+article
             article=extras+article
             if add_body:
-                article=article+[b'', self._unique()]
+                article=article+[b'', inntest.utils._unique()]
             if cmd!=b'POST':
                 cmd_list=[cmd,ident]
             else:
@@ -1296,15 +1192,15 @@ class Tests(object):
         check('no subject',
               [b'Newsgroups: ' + inntest.group,
                b'From: ' + inntest.email,
-               b'Date: ' + self._date()])
+               b'Date: ' + inntest.utils._date()])
         check('no from',
               [b'Newsgroups: ' + inntest.group,
                b'Subject: [nntpbits] no from test (ignore)',
-               b'Date: ' + self._date()])
+               b'Date: ' + inntest.utils._date()])
         check('no newsgroups',
               [b'From: ' + inntest.email,
                b'Subject: [nntpbits] no groups test (ignore)',
-               b'Date: ' + self._date()])
+               b'Date: ' + inntest.utils._date()])
         if cmd==b'IHAVE':
             check('missing date',
                   [b'Newsgroups: ' + inntest.group,
@@ -1314,49 +1210,49 @@ class Tests(object):
                   [b'Newsgroups: ' + inntest.group,
                    b'From: ' + inntest.email,
                    b'Subject: [nntpbits] missing path test (ignore)',
-                   b'Date: ' + self._date()],
+                   b'Date: ' + inntest.utils._date()],
                   extras=[])
         check('missing body',
               [b'Newsgroups: ' + inntest.group,
                b'From: ' + inntest.email,
                b'Subject: [nntpbits] missing body test (ignore)',
-               b'Date: ' + self._date()],
+               b'Date: ' + inntest.utils._date()],
               add_body=False)
         ## Malformed things
         check('empty newsgroups',
               [b'Newsgroups: ',
                b'From: ' + inntest.email,
                b'Subject: [nntpbits] empty groups test (ignore)',
-               b'Date: ' + self._date()])
+               b'Date: ' + inntest.utils._date()])
         check('empty followup-to',
               [b'Newsgroups: ' + inntest.group,
                b'From: ' + inntest.email,
                b'Subject: [nntpbits] empty followup test (ignore)',
                b'Followup-To:',
-               b'Date: ' + self._date()],
+               b'Date: ' + inntest.utils._date()],
               expected_fail=(cmd==b'POST'))
         check('empty from',
               [b'Newsgroups: ' + inntest.group,
                b'From: ',
                b'Subject: [nntpbits] empty from test (ignore)',
-               b'Date: ' + self._date()])
+               b'Date: ' + inntest.utils._date()])
         check('malformed from',
               [b'Newsgroups: ' + inntest.group,
                b'From: example',
                b'Subject: [nntpbits] malformed from test (ignore)',
-               b'Date: ' + self._date()],
+               b'Date: ' + inntest.utils._date()],
               expected_fail=(cmd==b'IHAVE'))
         check('malformed from #2',
               [b'Newsgroups: ' + inntest.group,
                b'From: @example.com',
                b'Subject: [nntpbits] malformed from test #2 (ignore)',
-               b'Date: ' + self._date()],
+               b'Date: ' + inntest.utils._date()],
               expected_fail=True)
         check('forbidden newsgroup',
               [b'Newsgroups: poster',
                b'From: ' + inntest.email,
                b'Subject: [nntpbits] forbidden groups test (ignore)',
-               b'Date: ' + self._date()])
+               b'Date: ' + inntest.utils._date()])
         check('malformed date',
               [b'Newsgroups: '+inntest.group,
                b'From: ' + inntest.email,
@@ -1366,13 +1262,13 @@ class Tests(object):
               [b'Newsgroups: '+inntest.group,
                b'From: ' + inntest.email,
                b'Subject: [nntpbits] malformed injection date test (ignore)',
-               b'Date: ' + self._date(),
+               b'Date: ' + inntest.utils._date(),
                b'Injection-Date: your sister'])
         check('malformed expires date',
               [b'Newsgroups: '+inntest.group,
                b'From: ' + inntest.email,
                b'Subject: [nntpbits] malformed expires date test (ignore)',
-               b'Date: ' + self._date(),
+               b'Date: ' + inntest.utils._date(),
                b'Expires: your sister'],
               expected_fail=(cmd==b'IHAVE'))
         for ident in [b'junk', b'<junk>', b'<junk@junk']:
@@ -1380,15 +1276,15 @@ class Tests(object):
                   [b'Newsgroups: '+inntest.group,
                    b'From: ' + inntest.email,
                    b'Subject: [nntpbits] malformed message ID test (ignore)',
-                   b'Date: ' + self._date(),
+                   b'Date: ' + inntest.utils._date(),
                    b'Message-ID: ' + ident],
-                  self._ident())
+                  inntest.utils._ident())
             if cmd==b'IHAVE':
                 check('malformed message-id (%s)' % ident,
                       [b'Newsgroups: '+inntest.group,
                        b'From: ' + inntest.email,
                        b'Subject: [nntpbits] malformed message ID test (ignore)',
-                       b'Date: ' + self._date(),
+                       b'Date: ' + inntest.utils._date(),
                        b'Message-ID: ' + ident],
                       ident,
                       error_response=435)
@@ -1396,7 +1292,7 @@ class Tests(object):
               [b'Newsgroups: ' + inntest.group,
                b'From: ' + inntest.email,
                b'Subject: [nntpbits] empty body test (ignore)',
-               b'Date: ' + self._date(),
+               b'Date: ' + inntest.utils._date(),
                b''],
               add_body=False,
               expected_fail=(cmd==b'IHAVE'))
@@ -1406,41 +1302,41 @@ class Tests(object):
                b'Newsgroups: ' + inntest.group,
                b'From: ' + inntest.email,
                b'Subject: [nntpbits] duplicate header test (ignore)',
-               b'Date: ' + self._date()])
+               b'Date: ' + inntest.utils._date()])
         ## Semantic checks
         check('past article',
               [b'Newsgroups: ' + inntest.group,
                b'From: ' + inntest.email,
                b'Subject: [nntpbits] past article test (ignore)',
-               b'Date: ' + self._date(time.time()-86400*365)])
+               b'Date: ' + inntest.utils._date(time.time()-86400*365)])
         check('past article #2',
               [b'Newsgroups: ' + inntest.group,
                b'From: ' + inntest.email,
                b'Subject: [nntpbits] past article #2 test (ignore)',
-               b'Date: ' + self._date(),
-               b'Injection-Date: ' + self._date(time.time()-86400*365)])
+               b'Date: ' + inntest.utils._date(),
+               b'Injection-Date: ' + inntest.utils._date(time.time()-86400*365)])
         check('future article',
               [b'Newsgroups: ' + inntest.group,
                b'From: ' + inntest.email,
                b'Subject: [nntpbits] future article test (ignore)',
-               b'Date: ' + self._date(time.time()+86400*7)])
+               b'Date: ' + inntest.utils._date(time.time()+86400*7)])
         check('future article #2',
               [b'Newsgroups: ' + inntest.group,
                b'From: ' + inntest.email,
                b'Subject: [nntpbits] future article #2 test (ignore)',
-               b'Date: ' + self._date(),
-               b'Injection-Date: ' + self._date(time.time()+86400*7)])
+               b'Date: ' + inntest.utils._date(),
+               b'Injection-Date: ' + inntest.utils._date(time.time()+86400*7)])
         check('nonexistent newsgroup',
-              [b'Newsgroups: ' + self._groupname(),
+              [b'Newsgroups: ' + inntest.utils._groupname(),
                b'From: ' + inntest.email,
                b'Subject: [nntpbits] nonexistent group test (ignore)',
-               b'Date: ' + self._date()])
+               b'Date: ' + inntest.utils._date()])
         if cmd==b'POST':
             check('followup to nonexistent newsgroup',
                   [b'Newsgroups: ' + inntest.group,
-                   b'Followup-To: ' + self._groupname(),
+                   b'Followup-To: ' + inntest.utils._groupname(),
                    b'From: ' + inntest.email,
                    b'Subject: [nntpbits] nonexistent group test (ignore)',
-                   b'Date: ' + self._date()])
+                   b'Date: ' + inntest.utils._date()])
         if expected_fails > 0:
             return 'expected_fail'

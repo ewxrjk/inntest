@@ -28,6 +28,7 @@ trigger -- command to trigger peering, etc.
 
 
 """
+from inntest.utils import *
 from inntest.Tests import *
 
 address=(None, 119)
@@ -50,6 +51,3 @@ def _fixconfig():
     hierarchy=nntpbits._normalize(hierarchy)
 
 localserverclass=TestServer
-seed=os.urandom(32)
-sequence=0
-lock=threading.Lock()

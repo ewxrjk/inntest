@@ -1372,6 +1372,13 @@ class Tests(object):
                b'From: ' + self.email,
                b'Subject: [nntpbits] empty groups test (ignore)',
                b'Date: ' + self._date()])
+        check('empty followup-to',
+              [b'Newsgroups: ' + self.group,
+               b'From: ' + self.email,
+               b'Subject: [nntpbits] empty followup test (ignore)',
+               b'Followup-To:',
+               b'Date: ' + self._date()],
+              expected_fail=(cmd==b'POST'))
         check('empty from',
               [b'Newsgroups: ' + self.group,
                b'From: ',

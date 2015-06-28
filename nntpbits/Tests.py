@@ -386,6 +386,20 @@ class Tests(object):
             hierarchy=self.hierarchy
         self.test_list(wildmat=hierarchy+b'.*')
 
+    def test_list_headers(self):
+        """t.test_list_wildmat()
+
+        Tests extra details of the LIST HEADERS command
+
+        """
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn._require_reader()
+            subcommands=conn.capability_arguments(b'LIST')
+            if b'HEADERS' not in subcommands:
+                return 'skip'
+            self._test_list(conn, b'HEADERS MSGID')
+            self._test_list(conn, b'HEADERS RANGE')
+
     # LIST subcommands that can take a wildmat
     _list_wildmat=set([ b'ACTIVE',
                         b'ACTIVE.TIMES',
@@ -407,6 +421,8 @@ class Tests(object):
     _list_distrib_pats_re=re.compile(b'^(\\d+):([^:]+):(.*)$')
     _list_newsgroups_re=re.compile(b'^(\\S+)[ \\t]+(.*)$')
     _list_headers_re=re.compile(b'^(:?\\S+)$')
+    _list_headers_msgid_re=_list_headers_re
+    _list_headers_range_re=_list_headers_re
     # RFC6048 extras
     _list_counts_re=re.compile(b'^(\\S+) +(\\d+) +(\\d+) +(\\d+) +([ynmxj]|=\S+)$')
     _list_distributions_re=re.compile(b'^(\\S+)[ \t]+(.*)$')
@@ -441,7 +457,7 @@ class Tests(object):
                 return
             raise Exception("LIST %s: unexpected 503" % kw)
         # Find the regexp to verify/parse lines
-        name='list_'+str(kw, 'ascii').replace('.', '_').lower()
+        name='list_'+str(kw, 'ascii').replace(' ', ' ').replace('.', '_').lower()
         regex_name='_'+name+'_re'
         regex=getattr(self, regex_name, None)
         if regex is not None:

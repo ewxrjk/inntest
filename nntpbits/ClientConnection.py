@@ -617,7 +617,7 @@ class ClientConnection(nntpbits.Connection):
             cap=b'ACTIVE'
         else:
             what=nntpbits._normalize(what).upper()
-            cap=what
+            cap=what.split(b' ')[0]
         # Become a reader if necessary
         if (cap not in self.capability_arguments(b'LIST')
             and b'MODE-READER' in self.capabilites()):

@@ -1016,3 +1016,145 @@ class Tests(object):
             for ident,article in articles:
                 if not ident in seen:
                     raise Exception("LISTGROUP: failed to list %s" % ident)
+
+    # -------------------------------------------------------------------------
+    # Negative testing
+
+    # Commands that check or fetch part of an article by ID, number or current
+    _article_commands=[b'ARTICLE', b'HEAD', b'BODY', b'STAT']
+    # Various offsets, representing attempts to tickle overflow behavior in
+    # article number parsing
+    _number_deltas=[100000, 1<<16, 1<<31, 1<<32, 1<<33, 1<<53]
+
+    def test_errors_no_article(self):
+        """t.test_errors_no_article()
+
+        Test errors for nonexistent articles.
+
+        """
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn._require_reader() # cheating
+            for cmd in Tests._article_commands:
+                code,arg=conn.transact([cmd, self._ident()])
+                if code != 430:
+                    raise Exception("%s: incorrect error for nonexistent article: %s"
+                                    % (cmd, conn.response))
+            if (b'OVER' in conn.capabilities()
+                and b'MSGID' in conn.capability_arguments(b'OVER')):
+                code,arg=conn.transact([b'OVER', self._ident()])
+                if code != 430:
+                    raise Exception("OVER: incorrect error for nonexistent article: %s"
+                                    % (cmd, conn.response))
+            if b'HDR' in conn.capabilities():
+                code,arg=conn.transact([b'HDR', b'Subject', self._ident()])
+                if code != 430:
+                    raise Exception("OVER: incorrect error for nonexistent article: %s"
+                                    % (cmd, conn.response))
+
+    def test_errors_no_group(self):
+        """t.test_errors_no_group()
+
+        Test errors for nonexistent groups
+
+        """
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn._require_reader() # cheating
+            for cmd in [b'GROUP', b'LISTGROUP']:
+                code,arg=conn.transact([cmd, self._groupname()])
+                if code != 411:
+                    raise Exception("%s: incorrect error for nonexistent group: %s"
+                                    % (cmd, conn.response))
+
+    def test_errors_outside_group(self):
+        """t.test_errors_outside_group()
+
+        Test errors for commands issued outside a group.
+
+        """
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn._require_reader() # cheating
+            for cmd in [b'NEXT', b'LAST']:
+                code,arg=conn.transact(cmd)
+                if code != 412:
+                    raise Exception("%s: incorrect error outside group: %s"
+                                    % (cmd, conn.response))
+            for cmd in Tests._article_commands:
+                code,arg=conn.transact(cmd)
+                if code != 412:
+                    raise Exception("%s: incorrect error outside group: %s"
+                                    % (cmd, conn.response))
+                # 3977 9.8: article-number = 1*16DIGIT
+                for number in [1, 10**15]:
+                    code,arg=conn.transact([cmd, str(number)])
+                if code != 412:
+                    raise Exception("%s: incorrect error outside group: %s"
+                                    % (cmd, conn.response))
+                for number in [10**16, '0'*16+'1']:
+                    code,arg=conn.transact([cmd, str(number)])
+                    if code != 501:
+                        raise Exception("%s: incorrect error for bad article-number: %s"
+                                        % (cmd, conn.response))
+
+    def test_errors_group_navigation(self):
+        """t.test_errors_group_navigation()
+
+        Test errors for group navigation commands.
+
+        """
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn._require_reader() # cheating
+            count,low,high=conn.group(self.group)
+            for cmd in Tests._article_commands:
+                for delta in Tests._number_deltas:
+                    code,arg=conn.transact([cmd, '%d' % (high+delta)])
+                    if code != 423:
+                        raise Exception("%s: incorrect error for bad article number: %s"
+                                        % (cmd, conn.response))
+            # The next two are, in theory, racy.  When using the full inntest
+            # test rig this isn't really an issue as nothing will be
+            # adding/removing articles.  It could be an issue when using a
+            # heavily used group on an active server though.
+            conn.stat(low)
+            conn.stat()         # ensure article is selected
+            code,arg=conn.transact(b'LAST')
+            if code != 422:
+                raise Exception("LAST: incorrect error for no previous article: %s"
+                                % conn.response)
+            conn.stat(high)
+            conn.stat()         # ensure article is selected
+            code,arg=conn.transact(b'NEXT')
+            if code != 421:
+                raise Exception("NEXT: incorrect error for no next article: %s"
+                                % conn.response)
+
+    def test_errors_group_overview(self):
+        """t.test_errors_group_overview()
+
+        Test range behavior for group overview commands.
+
+        """
+        skip='skip'
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn._require_reader() # cheating
+            count,low,high=conn.group(self.group)
+            if b'OVER' in conn.capabilities():
+                skip=None
+                for delta in Tests._number_deltas:
+                    overviews=conn.over(low+delta, high+delta)
+                    if len(overviews)!=0:
+                        raise Exception("OVER: unexpected overview data: delta=%d"
+                                        % delta)
+                overviews=conn.over(high, low)
+                if len(overviews)!=0:
+                    raise Exception("OVER: unexpected overview data: reverse range")
+            if b'HDR' in conn.capabilities():
+                skip=None
+                for delta in Tests._number_deltas:
+                    headers=conn.hdr(b'Newsgroups', low+delta, high+delta)
+                    if len(headers)!=0:
+                        raise Exception("HDR: unexpected header data: delta=%d"
+                                        % delta)
+                headers=conn.over(high, low)
+                if len(headers)!=0:
+                    raise Exception("HDR: unexpected header data: reverse range")
+            return skip

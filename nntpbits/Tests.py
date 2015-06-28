@@ -125,6 +125,9 @@ class Tests(object):
             if suitable:
                 return unique
 
+    def _groupname(self):
+        return self.hierarchy+b'.'+self._unique(b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
     def _ident(self, ident=None):
         """t._ident([IDENT]) -> IDENT
 
@@ -964,7 +967,7 @@ class Tests(object):
             start=conn.date()
             while start==conn.date():
                 time.sleep(0.25)
-            group=self.hierarchy+b'.'+self._unique(b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+            group=self._groupname()
             cmd=create % str(group, 'ascii')
             logging.info("executing: %s" % cmd)
             rc=os.system(cmd)

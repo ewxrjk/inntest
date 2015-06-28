@@ -541,7 +541,7 @@ class ClientConnection(nntpbits.Connection):
     # -------------------------------------------------------------------------
     # NEWGROUPS (3977 7.3)
 
-    def newgroups(self, date):
+    def newgroups(self, date, gmt=True):
         """n.newgroups(DATE) -> LIST
 
         Returns a list of groups created since DATE.
@@ -556,9 +556,12 @@ class ClientConnection(nntpbits.Connection):
         third is the result of the DATE command and the date() method.
 
         """
-        date=ClientConnection._newstuff_date(date)
+        date=ClientConnection._newstuff_date(date, gmt)
         self._require_reader()
-        code,arg=self.transact([b'NEWGROUPS', date[:-6], date[-6:]])
+        cmd=[b'NEWGROUPS', date[:-6], date[-6:]]
+        if gmt:
+            cmd.append(b'GMT')
+        code,arg=self.transact(cmd)
         if code==231:
             return self.receive_lines()
         else:
@@ -567,7 +570,7 @@ class ClientConnection(nntpbits.Connection):
     # -------------------------------------------------------------------------
     # NEWNEWS (3977 7.4)
 
-    def newnews(self, wildmat, date):
+    def newnews(self, wildmat, date, gmt=True):
         """n.newnews(WILDMAT, DATE) -> LIST
 
         Returns a list of messages posted to groups matching WILDMAT
@@ -582,18 +585,22 @@ class ClientConnection(nntpbits.Connection):
         The first two are the native format for NNTP NEWNEWS; the
         third is the result of the DATE command and the date() method.
         """
-        date=ClientConnection._newstuff_date(date)
+        date=ClientConnection._newstuff_date(date, gmt)
         self._require_reader()
-        code,arg=self.transact([b'NEWNEWS', wildmat, date[:-6], date[-6:]])
+        cmd=[b'NEWNEWS', wildmat, date[:-6], date[-6:]]
+        if gmt:
+            cmd.append(b'GMT')
+        code,arg=self.transact(cmd)
         if code==230:
             return self.receive_lines()
         else:
             raise Exception("NEWNEWS command failed: %s", self.response)
 
-    def _newstuff_date(date):
+    def _newstuff_date(date, gmt):
         if isinstance(date, list):
             date=b''.join(nntpbits._normalize(date))
         elif isinstance(date, int) or isinstance(date, float):
+            assert gmt
             date=time.strftime("%Y%m%d%H%M%S", time.gmtime(date))
         return nntpbits._normalize(date)
 

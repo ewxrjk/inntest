@@ -978,10 +978,18 @@ class Tests(object):
             while start==conn.date():
                 time.sleep(0.25)
             articles=self._post_articles(conn)
+            # Multiple tests reflects optimizations in INN
             new_idents=set(conn.newnews(self.hierarchy+b'.*', start))
             for ident,article in articles:
                 if ident not in new_idents:
                     raise Exception("NEWNEWS: did not find %s" % ident)
+            new_idents=set(conn.newnews(self.group, start))
+            for ident,article in articles:
+                if ident not in new_idents:
+                    raise Exception("NEWNEWS: did not find %s" % ident)
+            new_idents=set(conn.newnews(b'!*', start))
+            if len(new_idents) > 0:
+                raise Exception("NEWNEWS: return articles for empty wildmat")
 
     # -------------------------------------------------------------------------
     # Testing NEWGROUPS
@@ -1252,4 +1260,21 @@ class Tests(object):
                 if code!=501:
                     raise Exception("%s: wrong response for bad argument: %s"
                                     % (cmd, conn.response))
+            for cmd in [b'NEWNEWS *', b'NEWGROUPS']:
+                for arg in [b'',
+                            b'990101',
+                            b'19990101',
+                            b'990101000000',
+                            b'19990101000000',
+                            b'19990101 000000 BST',
+                            b'19990101 000000 GMT GMT',
+                            b'19990101 240000',
+                            b'19990101 000000 +0000',
+                            b'19990101 000000 0000',
+                            b'19990101 000000 -0000',
+                            b'19990101 000000 00']:
+                    code,arg=conn.transact([cmd,arg])
+                    if code!=501:
+                        raise Exception("%s: wrong response for bad argument: %s"
+                                        % (cmd, conn.response))
         return ret[0]

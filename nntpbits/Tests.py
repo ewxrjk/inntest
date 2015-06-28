@@ -1479,5 +1479,12 @@ class Tests(object):
                b'From: ' + self.email,
                b'Subject: [nntpbits] nonexistent group test (ignore)',
                b'Date: ' + self._date()])
+        if cmd==b'POST':
+            check('followup to nonexistent newsgroup',
+                  [b'Newsgroups: ' + self.group,
+                   b'Followup-To: ' + self._groupname(),
+                   b'From: ' + self.email,
+                   b'Subject: [nntpbits] nonexistent group test (ignore)',
+                   b'Date: ' + self._date()])
         if expected_fails > 0:
             return 'expected_fail'

@@ -44,6 +44,7 @@ def main(argv):
     p.add_argument('-L', '--list', help='List tests',
                    action='store_true')
     r=p.parse_args(argv)
+    logging.basicConfig(level=r.debug)
     cls=nntpbits.Tests
     all_tests=cls.list_tests()
     if r.list:
@@ -70,7 +71,6 @@ def main(argv):
         arg=m.group(2)
         value=m.group(3)
         args[test][arg]=value
-    logging.basicConfig(level=r.debug)
     t=cls(r.server, r.port, group=r.group, email=r.email, domain=r.domain,
           localserver=('*', r.localport), timelimit=r.timelimit,
           trigger=r.trigger)

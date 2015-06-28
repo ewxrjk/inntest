@@ -429,6 +429,8 @@ class Tests(object):
             verify=lambda s: True
         else:
             if kw not in self._list_wildmat:
+                logging.warn("SKIPPING TEST of LIST %s, don't know how to check output"
+                             % kw)
                 return 'skip'
             verify=Tests._wildmat_to_function(wildmat)
         lines=conn.list(kw, wildmat)
@@ -846,8 +848,10 @@ class Tests(object):
         with nntpbits.ClientConnection((self.address, self.port)) as conn:
             conn._require_reader() # cheating
             if not b'OVER' in conn.capabilities():
+                logging.warn("SKIPPING TEST because no OVER capability")
                 return 'skip'
             if not b'MSGID' in conn.capability_arguments(b'OVER'):
+                logging.warn("SKIPPING TEST because no OVER MSGID capability")
                 return 'skip'
             articles=self._post_articles(conn)
             count,low,high=conn.group(self.group)
@@ -866,6 +870,7 @@ class Tests(object):
         with nntpbits.ClientConnection((self.address, self.port)) as conn:
             conn._require_reader() # cheating
             if not b'OVER' in conn.capabilities():
+                logging.warn("SKIPPING TEST because no OVER capability")
                 return 'skip'
             articles=self._post_articles(conn)
             count,low,high=conn.group(self.group)
@@ -898,6 +903,7 @@ class Tests(object):
         with nntpbits.ClientConnection((self.address, self.port)) as conn:
             conn._require_reader() # cheating
             if not b'HDR' in conn.capabilities():
+                logging.warn("SKIPPING TEST because no HDR capability")
                 return 'skip'
             articles=self._post_articles(conn)
             count,low,high=conn.group(self.group)
@@ -937,6 +943,7 @@ class Tests(object):
         with nntpbits.ClientConnection((self.address, self.port)) as conn:
             conn._require_reader() # cheating
             if not b'NEWNEWS' in conn.capabilities():
+                logging.warn("SKIPPING TEST because no NEWNEWS capability")
                 return 'skip'
             start=conn.date()
             while start==conn.date():
@@ -1002,6 +1009,7 @@ class Tests(object):
         with nntpbits.ClientConnection((self.address, self.port)) as conn:
             conn._require_reader() # cheating
             if not b'HDR' in conn.capabilities():
+                logging.warn("SKIPPING TEST because no HDR capability")
                 return 'skip'
             articles=self._post_articles(conn)
             seen=set()
@@ -1157,4 +1165,6 @@ class Tests(object):
                 headers=conn.over(high, low)
                 if len(headers)!=0:
                     raise Exception("HDR: unexpected header data: reverse range")
+            if skip=='skip':
+                logging.warn("SKIPPING TEST because no OVER or HDR capability")
             return skip

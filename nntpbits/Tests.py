@@ -1224,6 +1224,18 @@ class Tests(object):
                                     % conn.response)
                 if code==215:
                     conn.receive_lines()
+                subcommands=conn.capability_arguments(b'LIST')
+                if b'HEADERS' in subcommands:
+                    code,arg=conn.transact(b'LIST HEADERS NOTINNNTP')
+                    if code!=501:
+                        raise Exception("LIST HEADERS: wrong response for bad argument: %s"
+                                        % conn.response)
+                for subcommand in subcommands:
+                    if subcommand not in Tests._list_wildmat:
+                        code,arg=conn.transact([b'LIST', subcommand, b'*'])
+                        if code!=501:
+                            raise Exception("LIST %s: wrong response for bad argument: %s"
+                                            % (subcommand, conn.response))
             check('first')
             conn._mode_reader()     # cheating
             check("second")

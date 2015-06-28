@@ -140,15 +140,17 @@ class Tests(object):
         else:
             return nntpbits._normalize(ident)
 
-    def _date(self):
+    def _date(self, when=None):
         """t._date() -> BYTES
 
         Returns the date in a format suitable for use in news
         articles.
 
         """
+        if when==None:
+            when=time.time()
         return bytes(time.strftime("%a, %d %b %Y %H:%M:%S +0000",
-                                   time.gmtime()),
+                                   time.gmtime(when)),
                      'ascii')
 
     # -------------------------------------------------------------------------
@@ -1207,7 +1209,7 @@ class Tests(object):
             return skip
 
     def test_errors_bad_commands(self):
-        """t.test_errors_group_overview()
+        """t.test_errors_bad_commands()
 
         Test error behavior for bad commands.
 
@@ -1278,3 +1280,197 @@ class Tests(object):
                         raise Exception("%s: wrong response for bad argument: %s"
                                         % (cmd, conn.response))
         return ret[0]
+
+    def test_errors_bad_post(self):
+        """t.test_errors_bad_post()
+
+        Test error behavior for bad local postings.
+
+        """
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            conn._require_reader()
+            return self._test_errors_bad_post(conn, b'POST', 340, 240, 441, [])
+
+    def test_errors_bad_ihave(self):
+        """t.test_errors_bad_ihave()
+
+        Test error behavior for bad post injections.
+
+        """
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            return self._test_errors_bad_post(conn, b'IHAVE', 335, 235, 437,
+                                              [b'Path: '+self.domain])
+
+    def _test_errors_bad_post(self, conn, cmd, initial_response, ok_response,
+                              error_response, extras):
+        """t._test_errors_bad_post(CONN, CMD, INITIAL_RESPONSE, OK_RESPONSE,
+                        ERROR_RESPONSE, EXTRAS)
+
+        Test IHAVE/POST error behavior.
+
+        """
+        expected_fails=0
+        def check(what, article, ident=None,
+                  error_response=error_response, add_body=True,
+                  expected_fail=False, extras=extras):
+            if ident is None:
+                ident=self._ident()
+                article=[b'Message-ID: '+ident]+article
+            article=extras+article
+            if add_body:
+                article=article+[b'', self._unique()]
+            if cmd!=b'POST':
+                cmd_list=[cmd,ident]
+            else:
+                cmd_list=cmd
+            code,arg=conn.transact(cmd_list)
+            if code==initial_response:
+                conn.send_lines(article)
+                code,arg=conn.wait()
+            if code!=error_response:
+                if expected_fail:
+                    logging.warn("EXPECTED FAILURE: %s: wrong response for %s: %d"
+                                 % (cmd, what, code))
+                    nonlocal expected_fails
+                    expected_fails+=1
+                else:
+                    raise Exception("%s: wrong response for %s: %d"
+                                    % (cmd, what, code))
+        ## Missing things
+        check('no subject',
+              [b'Newsgroups: ' + self.group,
+               b'From: ' + self.email,
+               b'Date: ' + self._date()])
+        check('no from',
+              [b'Newsgroups: ' + self.group,
+               b'Subject: [nntpbits] no from test (ignore)',
+               b'Date: ' + self._date()])
+        check('no newsgroups',
+              [b'From: ' + self.email,
+               b'Subject: [nntpbits] no groups test (ignore)',
+               b'Date: ' + self._date()])
+        if cmd==b'IHAVE':
+            check('missing date',
+                  [b'Newsgroups: ' + self.group,
+                   b'From: ' + self.email,
+                   b'Subject: [nntpbits] missing date test (ignore)'])
+            check('missing path',
+                  [b'Newsgroups: ' + self.group,
+                   b'From: ' + self.email,
+                   b'Subject: [nntpbits] missing path test (ignore)',
+                   b'Date: ' + self._date()],
+                  extras=[])
+        check('missing body',
+              [b'Newsgroups: ' + self.group,
+               b'From: ' + self.email,
+               b'Subject: [nntpbits] missing body test (ignore)',
+               b'Date: ' + self._date()],
+              add_body=False)
+        ## Malformed things
+        check('empty newsgroups',
+              [b'Newsgroups: ',
+               b'From: ' + self.email,
+               b'Subject: [nntpbits] empty groups test (ignore)',
+               b'Date: ' + self._date()])
+        check('empty from',
+              [b'Newsgroups: ' + self.group,
+               b'From: ',
+               b'Subject: [nntpbits] empty from test (ignore)',
+               b'Date: ' + self._date()])
+        check('malformed from',
+              [b'Newsgroups: ' + self.group,
+               b'From: example',
+               b'Subject: [nntpbits] malformed from test (ignore)',
+               b'Date: ' + self._date()],
+              expected_fail=(cmd==b'IHAVE'))
+        check('malformed from #2',
+              [b'Newsgroups: ' + self.group,
+               b'From: @example.com',
+               b'Subject: [nntpbits] malformed from test #2 (ignore)',
+               b'Date: ' + self._date()],
+              expected_fail=True)
+        check('forbidden newsgroup',
+              [b'Newsgroups: poster',
+               b'From: ' + self.email,
+               b'Subject: [nntpbits] forbidden groups test (ignore)',
+               b'Date: ' + self._date()])
+        check('malformed date',
+              [b'Newsgroups: '+self.group,
+               b'From: ' + self.email,
+               b'Subject: [nntpbits] malformed date test (ignore)',
+               b'Date: your sister'])
+        check('malformed injection date',
+              [b'Newsgroups: '+self.group,
+               b'From: ' + self.email,
+               b'Subject: [nntpbits] malformed injection date test (ignore)',
+               b'Date: ' + self._date(),
+               b'Injection-Date: your sister'])
+        check('malformed expires date',
+              [b'Newsgroups: '+self.group,
+               b'From: ' + self.email,
+               b'Subject: [nntpbits] malformed expires date test (ignore)',
+               b'Date: ' + self._date(),
+               b'Expires: your sister'],
+              expected_fail=(cmd==b'IHAVE'))
+        for ident in [b'junk', b'<junk>', b'<junk@junk']:
+            check('malformed message-id (%s)' % ident,
+                  [b'Newsgroups: '+self.group,
+                   b'From: ' + self.email,
+                   b'Subject: [nntpbits] malformed message ID test (ignore)',
+                   b'Date: ' + self._date(),
+                   b'Message-ID: ' + ident],
+                  self._ident())
+            if cmd==b'IHAVE':
+                check('malformed message-id (%s)' % ident,
+                      [b'Newsgroups: '+self.group,
+                       b'From: ' + self.email,
+                       b'Subject: [nntpbits] malformed message ID test (ignore)',
+                       b'Date: ' + self._date(),
+                       b'Message-ID: ' + ident],
+                      ident,
+                      error_response=435)
+        check('empty body',
+              [b'Newsgroups: ' + self.group,
+               b'From: ' + self.email,
+               b'Subject: [nntpbits] empty body test (ignore)',
+               b'Date: ' + self._date(),
+               b''],
+              add_body=False,
+              expected_fail=(cmd==b'IHAVE'))
+        ## Duplicate things
+        check('duplicate header',
+              [b'Newsgroups: ' + self.group,
+               b'Newsgroups: ' + self.group,
+               b'From: ' + self.email,
+               b'Subject: [nntpbits] duplicate header test (ignore)',
+               b'Date: ' + self._date()])
+        ## Semantic checks
+        check('past article',
+              [b'Newsgroups: ' + self.group,
+               b'From: ' + self.email,
+               b'Subject: [nntpbits] past article test (ignore)',
+               b'Date: ' + self._date(time.time()-86400*365)])
+        check('past article #2',
+              [b'Newsgroups: ' + self.group,
+               b'From: ' + self.email,
+               b'Subject: [nntpbits] past article #2 test (ignore)',
+               b'Date: ' + self._date(),
+               b'Injection-Date: ' + self._date(time.time()-86400*365)])
+        check('future article',
+              [b'Newsgroups: ' + self.group,
+               b'From: ' + self.email,
+               b'Subject: [nntpbits] future article test (ignore)',
+               b'Date: ' + self._date(time.time()+86400*7)])
+        check('future article #2',
+              [b'Newsgroups: ' + self.group,
+               b'From: ' + self.email,
+               b'Subject: [nntpbits] future article #2 test (ignore)',
+               b'Date: ' + self._date(),
+               b'Injection-Date: ' + self._date(time.time()+86400*7)])
+        check('nonexistent newsgroup',
+              [b'Newsgroups: ' + self._groupname(),
+               b'From: ' + self.email,
+               b'Subject: [nntpbits] nonexistent group test (ignore)',
+               b'Date: ' + self._date()])
+        if expected_fails > 0:
+            return 'expected_fail'

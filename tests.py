@@ -24,18 +24,13 @@ def main(argv):
                    default='news')
     p.add_argument('-p', '--port', help='Subject news server port',
                    type=int, default=119)
-    p.add_argument('-T', '--trigger', help='Subject news server trigger command',
-                   default=None)
-    p.add_argument('-g', '--group', help='Test newsgroup name',
-                   default='local.test')
-    p.add_argument('-e', '--email', help='Test email address',
-                   default='invalid@invalid.invalid')
-    p.add_argument('-D', '--domain', help='Message-ID domain',
-                   default='test.terraraq.uk')
+    p.add_argument('-T', '--trigger', help='Subject news server trigger command')
+    p.add_argument('-g', '--group', help='Test newsgroup name')
+    p.add_argument('-e', '--email', help='Test email address')
+    p.add_argument('-D', '--domain', help='Message-ID domain')
     p.add_argument('-l', '--localport', help='Test server port',
                    type=int, default=1119)
-    p.add_argument('-t', '--timelimit', help='Per-test time limit',
-                   type=int, default=60)
+    p.add_argument('-t', '--timelimit', help='Per-test time limit',)
     p.add_argument('-a', '--arg', help="TEST:ARG=VALUE per-test argument",
                    type=str, dest='ARGS', action='append', default=[])
     p.add_argument('-d', '--debug', help='Enable debugging',
@@ -71,14 +66,13 @@ def main(argv):
         arg=m.group(2)
         value=m.group(3)
         args[test][arg]=value
-    inntest.address=(r.server,r.port)
-    inntest.group=r.group
-    inntest.email=r.email
-    inntest.doman=r.domain
-    inntest.localserveraddress=('*', r.localport)
-    inntest.timelimit=r.timelimit
-    inntest.trigger=r.trigger
-    inntest._fixconfig()        # TODO yuck
+    inntest.configure(address=(r.server,r.port),
+                      group=r.group,
+                      email=r.email,
+                      domain=r.domain,
+                      localserveraddress=('*', r.localport),
+                      timelimit=r.timelimit,
+                      trigger=r.trigger)
     t=cls()
     tested=0
     ok=0

@@ -16,17 +16,6 @@
 #
 """NNTP tests
 
-Configuration:
-address -- a (name,port) tuple for the news server to test.
-group -- newsgroup for testing.
-hierarchy -- hierarchy for testing.
-email -- email address for test postings.  Default invalid@invalid.invalid.
-domain -- domain for message IDs.  Default test.terraraq.uk.
-localserveraddress -- address for local server as (name,port) tuple.
-timelimit -- how log to wait for propagation.
-trigger -- command to trigger peering, etc.
-
-
 """
 from inntest.utils import *
 from inntest.Tests import *
@@ -41,13 +30,50 @@ timelimit=60
 trigger=None
 trigger_timeout=5
 
-def _fixconfig():
-    global domain, email, group, hierarchy
-    domain=nntpbits._normalize(domain)
-    email=nntpbits._normalize(email)
-    group=nntpbits._normalize(group)
+def configure(**kwargs):
+    """inntest.configure(...)
+
+    Set configuration for the test system.
+
+    Keywords arguments:
+    address -- a (name,port) tuple for the news server to test.
+    group -- newsgroup for testing.
+    hierarchy -- hierarchy for testing.
+    email -- email address for test postings.  Default invalid@invalid.invalid.
+    domain -- domain for message IDs.  Default test.terraraq.uk.
+    localserveraddress -- address for local server as (name,port) tuple.
+    timelimit -- how log to wait for propagation.
+    trigger -- command to trigger peering, etc.
+
+    """
+
+    global address,domain,email,group,hierarchy,localserveraddress
+    global timelimit,trigger,trigger_timeout
+    for name,value in kwargs.items():
+        if value is None:
+            continue
+        if name=='address':
+            address=value
+        elif name=='domain':
+            domain=nntpbits._normalize(value)
+        elif name=='email':
+            email=nntpbits._normalize(value)
+        elif name=='group':
+            group=nntpbits._normalize(value)
+        elif name=='hierarchy':
+            hierarchy=nntpbits._normalize(value)
+        elif name=='localserveraddress':
+            localserveraddress=value
+        elif name=='timelimit':
+            timelimit=int(value)
+        elif name=='trigger':
+            trigger=value
+        elif name=='trigger_timeout':
+            trigger_timeout=int(value)
+        else:
+            raise Exception("inntest.configure: unrecognized argument: %s"
+                            % name)
     if hierarchy is None:
         hierarchy=b'.'.join(group.split(b'.')[:-1])
-    hierarchy=nntpbits._normalize(hierarchy)
 
 localserverclass=TestServer

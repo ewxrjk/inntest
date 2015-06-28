@@ -1168,3 +1168,47 @@ class Tests(object):
             if skip=='skip':
                 logging.warn("SKIPPING TEST because no OVER or HDR capability")
             return skip
+
+    def test_errors_bad_commands(self):
+        """t.test_errors_group_overview()
+
+        Test error behavior for bad commands.
+
+        """
+        ret=[None]
+        with nntpbits.ClientConnection((self.address, self.port)) as conn:
+            def check(which):
+                code,arg=conn.transact(b'NOTINNNTP')
+                if code!=500:
+                    raise Exception("Wrong response for bad command: %s"
+                                    % conn.response)
+                for cmd in [b'MODE', b'LIST']:
+                    code,arg=conn.transact([cmd, b'NOTINNNTP'])
+                    if code!=501:
+                        raise Exception("%s: wrong response for bad argument: %s"
+                                        % (cmd, conn.response))
+                # INN accepts this, presumably relying on 3977 s4.3
+                code,arg=conn.transact([b'LIST ACTIVE',
+                                        self.hierarchy+b'[.]*'])
+                if code!=501 and code!=215:
+                    raise Exception("LIST ACTIVE: wrong response for bad argument: %s"
+                                    % conn.response)
+                if code==215:
+                    conn.receive_lines()
+            check('first')
+            conn._mode_reader()     # cheating
+            check("second")
+            for cmd in Tests._article_commands:
+                code,arg=conn.transact([cmd, b'1', b'2', b'3'])
+                if code!=501:
+                    raise Exception("%s: wrong response for bad argument: %s"
+                                    % (cmd, conn.response))
+                code,arg=conn.transact([cmd, b'junk'])
+                if code!=501:
+                    raise Exception("%s: wrong response for bad argument: %s"
+                                    % (cmd, conn.response))
+                code,arg=conn.transact([cmd, b'junk@junk'])
+                if code!=501:
+                    raise Exception("%s: wrong response for bad argument: %s"
+                                    % (cmd, conn.response))
+        return ret[0]

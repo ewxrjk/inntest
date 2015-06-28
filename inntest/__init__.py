@@ -75,5 +75,3 @@ def configure(**kwargs):
                             % name)
     if hierarchy is None:
         hierarchy=b'.'.join(group.split(b'.')[:-1])
-
-localserverclass=TestServer

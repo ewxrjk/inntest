@@ -71,9 +71,15 @@ def main(argv):
         arg=m.group(2)
         value=m.group(3)
         args[test][arg]=value
-    t=cls((r.server, r.port), group=r.group, email=r.email, domain=r.domain,
-          localserver=('*', r.localport), timelimit=r.timelimit,
-          trigger=r.trigger)
+    inntest.address=(r.server,r.port)
+    inntest.group=r.group
+    inntest.email=r.email
+    inntest.doman=r.domain
+    inntest.localserveraddress=('*', r.localport)
+    inntest.timelimit=r.timelimit
+    inntest.trigger=r.trigger
+    inntest._fixconfig()        # TODO yuck
+    t=cls()
     tested=0
     ok=0
     skipped=[]

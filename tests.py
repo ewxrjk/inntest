@@ -40,8 +40,7 @@ def main(argv):
                    action='store_true')
     r=p.parse_args(argv)
     logging.basicConfig(level=r.debug)
-    cls=inntest.Tests
-    all_tests=cls.list_tests()
+    all_tests=inntest.list_tests()
     if r.list:
         for test_name in all_tests:
             print(test_name)
@@ -73,7 +72,6 @@ def main(argv):
                       localserveraddress=('*', r.localport),
                       timelimit=r.timelimit,
                       trigger=r.trigger)
-    t=cls()
     tested=0
     ok=0
     skipped=[]
@@ -83,7 +81,7 @@ def main(argv):
         logging.info("Running test %s" % test_name)
         try:
             tested+=1
-            state=t.run_test(test_name, **args[test_name])
+            state=inntest.run_test(test_name, **args[test_name])
             if state=='skip':
                 skipped.append(test_name)
             elif state=='expected_fail':

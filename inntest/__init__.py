@@ -75,3 +75,25 @@ def configure(**kwargs):
                             % name)
     if hierarchy is None:
         hierarchy=b'.'.join(group.split(b'.')[:-1])
+
+def list_tests():
+    """inntest.list_tests() -> LIST
+
+    Returns a list of tests.
+    """
+    tests=[]
+    for member in dir(inntest):
+        if member[0:5] == 'test_':
+            tests.append(member)
+    return tests
+
+def run_test(test_name, *args, **kwargs):
+    """inntest.run_test(NAME, ...)
+
+    Run the test NAME.
+
+    """
+    method=getattr(inntest, test_name, None)
+    if method is None:
+        raise Exception("no such test as '%s'" % test_name)
+    return method(*args, **kwargs)

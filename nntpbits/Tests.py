@@ -994,7 +994,7 @@ class Tests(object):
     # Testing LISTGROUP
 
     def test_listgroup(self):
-        """.t.test_listgroup()
+        """t.test_listgroup()
 
         Test LISTGROUP.
 

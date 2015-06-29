@@ -24,7 +24,7 @@ def test_newnews():
     Test NEWNEWS.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         conn._require_reader() # cheating
         if not b'NEWNEWS' in conn.capabilities():
             logging.warn("SKIPPING TEST because no NEWNEWS capability")

@@ -23,7 +23,7 @@ def test_errors_bad_post():
     Test error behavior for bad local postings.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         conn._require_reader()
         return _test_errors_bad_post(conn, b'POST', 340, 240, 441, [])
 
@@ -33,7 +33,7 @@ def test_errors_bad_ihave():
     Test error behavior for bad post injections.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         return _test_errors_bad_post(conn, b'IHAVE', 335, 235, 437,
                                      [b'Path: '+inntest.domain])
 

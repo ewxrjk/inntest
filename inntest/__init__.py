@@ -112,3 +112,15 @@ def run_test(test_name, *args, **kwargs):
     if method is None:
         raise Exception("no such test as '%s'" % test_name)
     return method(*args, **kwargs)
+
+def connection():
+    """inntest.connection()
+
+    Return a connection to the news server to test.
+
+    """
+    return nntpbits.ClientConnection(inntest.address,
+                                     nnrp_user=nnrp_user,
+                                     nnrp_password=nnrp_password,
+                                     nntp_user=nntp_user,
+                                     nntp_password=nntp_password)

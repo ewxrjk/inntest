@@ -25,7 +25,7 @@ def test_errors_bad_commands():
 
     """
     ret=[None]
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         def check(which):
             code,arg=conn.transact(b'NOTINNNTP')
             if code!=500:

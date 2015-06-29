@@ -22,7 +22,7 @@ def test_help():
     Tests the HELP command.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         def check(which):
             lines=conn.help()
             for line in lines:

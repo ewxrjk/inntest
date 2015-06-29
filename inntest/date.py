@@ -26,7 +26,7 @@ def test_date():
     clock is reasonably accurate.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         now=int(time.time())
         d=conn.date()
         m=re.match(b'^(\\d\\d\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)$',

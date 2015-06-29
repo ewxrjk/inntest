@@ -29,7 +29,7 @@ def test_newgroups(create="ctlinnd -s newgroup %s",
     REMOVE will be used to remove it.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         conn._require_reader() # cheating
         start=conn.date()
         while start==conn.date():

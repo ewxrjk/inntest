@@ -25,7 +25,7 @@ def test_errors_group_overview():
 
     """
     skip='skip'
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         conn._require_reader() # cheating
         count,low,high=conn.group(inntest.group)
         if b'OVER' in conn.capabilities():

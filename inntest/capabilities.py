@@ -22,7 +22,7 @@ def test_capabilities():
     Tests the CAPABILITIES command.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         def check(which):
             cap = conn.capabilities()
             if len(cap) == 0:

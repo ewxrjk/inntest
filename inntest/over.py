@@ -27,7 +27,7 @@ def test_over_id():
     MSGID.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         conn._require_reader() # cheating
         if not b'OVER' in conn.capabilities():
             logging.warn("SKIPPING TEST because no OVER capability")
@@ -49,7 +49,7 @@ def test_over_number():
     Test OVER lookup by number.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         conn._require_reader() # cheating
         if not b'OVER' in conn.capabilities():
             logging.warn("SKIPPING TEST because no OVER capability")

@@ -23,7 +23,7 @@ def test_article_id():
     Test article lookup by <message id>.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         articles=_post_articles(conn)
         for cmd,parse in _article_lookup_commands():
             logging.debug("test_article_id %s" % cmd)
@@ -43,7 +43,7 @@ def test_article_number():
     Test article lookup by number.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         articles=_post_articles(conn)
         count,low,high=conn.group(inntest.group)
         ident_to_number={}

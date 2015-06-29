@@ -39,7 +39,7 @@ def test_post(ident=None, description=b"posting test"):
              b'Message-ID: ' + ident,
              b'',
              b'nntpbits.Test test posting']
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         conn.post(article)
         _check_posted(conn, ident)
 
@@ -142,7 +142,7 @@ def test_ihave(ident=None, description=b"ihave test", _pathhost=None):
              b'Date: ' + inntest.utils._date(),
              b'',
              b'nntpbits.Test test posting']
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         conn.ihave(article)
         _check_posted(conn, ident)
 

@@ -27,7 +27,7 @@ def test_list(wildmat=None):
     syntax.  Then (if possible) switches to reader mode and
     repeats the exercise.
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         def check():
             subcommands=conn.capability_arguments(b'LIST')
             for kw in subcommands:
@@ -76,7 +76,7 @@ def test_list_headers():
     Tests extra details of the LIST HEADERS command
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         conn._require_reader()
         subcommands=conn.capability_arguments(b'LIST')
         if b'HEADERS' not in subcommands:

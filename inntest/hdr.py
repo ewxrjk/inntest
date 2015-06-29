@@ -24,7 +24,7 @@ def test_hdr_number():
     Test HDR lookup by number.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         conn._require_reader() # cheating
         if not b'HDR' in conn.capabilities():
             logging.warn("SKIPPING TEST because no HDR capability")

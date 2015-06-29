@@ -28,7 +28,7 @@ def test_errors_no_article():
     Test errors for nonexistent articles.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         conn._require_reader() # cheating
         for cmd in _article_commands:
             code,arg=conn.transact([cmd, inntest.utils._ident()])
@@ -53,7 +53,7 @@ def test_errors_no_group():
     Test errors for nonexistent groups
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         conn._require_reader() # cheating
         for cmd in [b'GROUP', b'LISTGROUP']:
             code,arg=conn.transact([cmd, inntest.utils._groupname()])
@@ -67,7 +67,7 @@ def test_errors_outside_group():
     Test errors for commands issued outside a group.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         conn._require_reader() # cheating
         for cmd in [b'NEXT', b'LAST']:
             code,arg=conn.transact(cmd)
@@ -97,7 +97,7 @@ def test_errors_group_navigation():
     Test errors for group navigation commands.
 
     """
-    with nntpbits.ClientConnection(inntest.address) as conn:
+    with inntest.connection() as conn:
         conn._require_reader() # cheating
         count,low,high=conn.group(inntest.group)
         for cmd in _article_commands:

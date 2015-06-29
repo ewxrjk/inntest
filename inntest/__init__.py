@@ -44,6 +44,10 @@ localserveraddress=('*',1119)
 timelimit=60
 trigger=None
 trigger_timeout=5
+nnrp_user=b'user'
+nnrp_password=b'password'
+nntp_user=None
+nntp_password=None
 
 def configure(**kwargs):
     """inntest.configure(...)
@@ -59,6 +63,10 @@ def configure(**kwargs):
     localserveraddress -- address for local server as (name,port) tuple.
     timelimit -- how log to wait for propagation.
     trigger -- command to trigger peering, etc.
+    nnrp_user -- NNRP login username
+    nnrp_password -- NNRP login password
+    nntp_user -- NNTP login username
+    nntp_password -- NNTP login password
 
     """
 
@@ -85,6 +93,10 @@ def configure(**kwargs):
             trigger=value
         elif name=='trigger_timeout':
             trigger_timeout=int(value)
+        elif name=='nnrp_user':
+            nnrp_user=nntpbits._normalize(value)
+        elif name=='nnrp_password':
+            nnrp_password=nntpbits._normalize(value)
         else:
             raise Exception("inntest.configure: unrecognized argument: %s"
                             % name)

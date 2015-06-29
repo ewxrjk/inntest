@@ -30,6 +30,8 @@ class ClientConnection(nntpbits.Connection):
     address -- host,port tuple
     timeout -- connect timeout
     source_address -- host,port tuple to bind local endpoint to
+    nnrp_user -- NNRP username
+    nnrp_password -- NNRP password
 
     Alternatively call the connect() method to actually establish a
     connection.
@@ -40,8 +42,13 @@ class ClientConnection(nntpbits.Connection):
 
     """
     def __init__(self, address=None, timeout=None, source_address=None,
-                 stoppable=False):
+                 stoppable=False, nnrp_user=None, nnrp_password=None,
+                 nntp_user=None, nntp_password=None):
         nntpbits.Connection.__init__(self, stoppable=stoppable)
+        self.nnrp_user=nntpbits._normalize(nnrp_user)
+        self.nnrp_password=nntpbits._normalize(nnrp_password)
+        self.nntp_user=nntpbits._normalize(nntp_user)
+        self.nntp_password=nntpbits._normalize(nntp_password)
         self._reset()
         if address is not None:
             self.connect(address, timeout, source_address)
@@ -111,6 +118,39 @@ class ClientConnection(nntpbits.Connection):
         self.reader=None
         self.capability_list=None
         return self.service
+
+    def transact(self, *args):
+        """n.transact(COMMAND) -> CODE,ARG
+
+        Send a command get the response, but authenticating
+        if necessary.
+
+        """
+        code,arg=super().transact(*args)
+        if code == 480 and self._authorize():
+            code,arg=super().transact(*args)
+        return code,arg
+
+    def _authorize(self):
+        if b'READER' in self.capabilities():
+            user=self.nnrp_user
+            password=self.nnrp_password
+        else:
+            user=self.nntp_user
+            password=self.nntp_password
+        if user is not None:
+            code,arg=self.transact([b'AUTHINFO', b'USER', user])
+            if code==281:
+                return True
+            if code!=381:
+                logging.error("username %s not accepted" % user)
+                return False
+        if password is not None:
+            code,arg=self.transact([b'AUTHINFO', b'PASS', password])
+            if code==281:
+                return True
+            logging.error("password not accepted")
+        return False
 
     # -------------------------------------------------------------------------
     # CAPABILITIES (3977 5.2)

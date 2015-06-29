@@ -36,7 +36,7 @@ def _normalize(s):
     """
     if isinstance(s, list):
         return [_normalize(line) for line in s]
-    if not isinstance(s, bytes):
+    if not isinstance(s, bytes) and s is not None:
         return bytes(s, 'ascii')
     else:
         return s

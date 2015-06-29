@@ -48,8 +48,40 @@ def test_newgroups(create="ctlinnd -s newgroup %s",
                     raise Exception("NEWGROUPS: malformed response: %s" % line)
                 if m.group(1)==group:
                     found=True
-                    if not found:
-                        raise Exception("NEWGROUPS: new group not listed")
+            if not found:
+                raise Exception("NEWGROUPS: new group not listed")
+            high=int(m.group(2))
+            low=int(m.group(3))
+            if high==0 and low==1:
+                pass
+            else:
+                raise Exception("NEWGROUPS: empty group yielded %d %d"
+                                % (low, high))
+            for lines in [conn.list(),
+                          conn.list(b'ACTIVE', group)]:
+                found=False
+                for line in lines:
+                    m=_list_active_re.match(line)
+                    if not m:
+                        raise Exception("LIST: malformed response: %s" % line)
+                    if m.group(1)==group:
+                        found=True
+                if not found:
+                    raise Exception("LIST: new group not listed")
+                high=int(m.group(2))
+                low=int(m.group(3))
+                if high==0 and low==1:
+                    pass
+                else:
+                    raise Exception("LIST: empty group yielded %d %d"
+                                    % (low, high))
+            count,low,high=conn.group(group)
+            if count==0 and high==0 and low==1:
+                pass
+            else:
+                # 3977 allows high >= low but this is obviously stupid
+                raise Exception("GROUP: empty group yielded %d %d %d"
+                                % (count, low, high))
         finally:
             cmd=remove % str(group, 'ascii')
             logging.info("executing: %s" % cmd)

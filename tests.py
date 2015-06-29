@@ -103,7 +103,7 @@ def main(argv):
         logging.info("QUALIFIED SUCCESS")
     else:
         logging.info("SUCCESS")
-    return 1 if ok + len(skipped) < tested else 0
+    return 1 if len(failed) > 0 else 0
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

@@ -34,7 +34,7 @@ You can start and stop the server in its current configuration, and
 run tests by hand:
 
     ./start
-    ./test-nntpbits
+    ./test-nntpbits manual
     # ... edit, repeat ...
     ./shutdown
 

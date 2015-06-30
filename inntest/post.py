@@ -41,6 +41,11 @@ def test_post(ident=None, description=b"posting test"):
              b'nntpbits.Test test posting']
     with inntest.connection() as conn:
         conn.post(article)
+        try:
+            conn.post(article)
+        except Exception as e:
+            if str(e) != 'POST command failed: 441 435 Duplicate':
+                raise e
         _check_posted(conn, ident)
 
 def _check_posted(conn, ident):
@@ -144,6 +149,11 @@ def test_ihave(ident=None, description=b"ihave test", _pathhost=None):
              b'nntpbits.Test test posting']
     with inntest.connection() as conn:
         conn.ihave(article)
+        try:
+            conn.ihave(article)
+        except Exception as e:
+            if str(e) != 'IHAVE command failed: 435 Duplicate':
+                raise e
         _check_posted(conn, ident)
 
 def test_ihave_propagates(ident=None, description=b'ihave propagation test'):

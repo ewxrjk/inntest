@@ -152,6 +152,11 @@ class ClientConnection(nntpbits.Connection):
             logging.error("password not accepted")
         return False
 
+    def _failed(self, command):
+        raise Exception("%s command failed: %s"
+                        % (str(command, 'ascii'),
+                           str(self.response, 'ascii')))
+
     # -------------------------------------------------------------------------
     # CAPABILITIES (3977 5.2)
 
@@ -242,7 +247,7 @@ class ClientConnection(nntpbits.Connection):
             self.reader=True
             self.posting=False
         else:
-            raise Exception("MODE READER command failed %s" % self.response)
+            self._failed('MODE READER')
         self.capability_list=None
         self.capability_set=None
         self.overview_fmt=None
@@ -281,7 +286,7 @@ class ClientConnection(nntpbits.Connection):
         elif code == 411:
             raise Exception("Group %s does not exist" % str(group))
         else:
-            raise Exception("GROUP command failed: %s" % self.response)
+            self._failed('GROUP')
 
     # -------------------------------------------------------------------------
     # LISTGROUP (3977 6.1.2)
@@ -307,7 +312,7 @@ class ClientConnection(nntpbits.Connection):
         if code == 211:
             return [int(line) for line in self.receive_lines()]
         else:
-            raise Exception("LISTGROUP command failed: %s" % self.response)
+            self._failed('LISTGROUP')
 
     # -------------------------------------------------------------------------
     # LAST & NEXT (3977 6.1.3-4)
@@ -374,7 +379,7 @@ class ClientConnection(nntpbits.Connection):
             return (int(m.group(1)), m.group(2), None)
         if code in ClientConnection._select_noarticle:
             return None, None, None
-        raise Exception("%s command failed: %s" % (str(cmd[0]), self.response))
+        self._failed(cmd[0])
 
     # -------------------------------------------------------------------------
     # ARTICLE, HEAD, BODY (3977 6.2.1-3)
@@ -449,8 +454,7 @@ class ClientConnection(nntpbits.Connection):
         elif code == 423 or code == 430:
             return None,None,None
         else:
-            raise Exception("%s command failed: %s"
-                            % (str(command), self.response))
+            self._failed(command)
 
     # -------------------------------------------------------------------------
     # POST & IHAVE (3977 6.3.1-2)
@@ -535,15 +539,13 @@ class ClientConnection(nntpbits.Connection):
         if code == 435 or code == 436:
             return code
         if code!=initial_response:
-            raise Exception("%s command failed: %s"
-                            % (str(command), self.response))
+            self._failed(command)
         self.send_lines(article)
         code,arg=self.wait()
         if code == 436 or code == 437:
             return code
         if code!=ok_response:
-            raise Exception("%s command failed: %s"
-                            % (str(command), self.response))
+            self._failed(command)
         return code
 
     # -------------------------------------------------------------------------
@@ -561,7 +563,7 @@ class ClientConnection(nntpbits.Connection):
         if code == 111:
             return arg
         else:
-            raise Exception("DATE command failed: %s", self.response)
+            self._failed('DATE')
 
     # -------------------------------------------------------------------------
     # HELP (3977 7.2)
@@ -576,7 +578,7 @@ class ClientConnection(nntpbits.Connection):
         if code == 100:
             return self.receive_lines()
         else:
-            raise Exception("HELP command failed: %s", self.response)
+            self_failed('HELP')
 
     # -------------------------------------------------------------------------
     # NEWGROUPS (3977 7.3)
@@ -605,7 +607,7 @@ class ClientConnection(nntpbits.Connection):
         if code==231:
             return self.receive_lines()
         else:
-            raise Exception("NEWGROUPS command failed: %s", self.response)
+            self._failed('NEWGROUPS')
 
     # -------------------------------------------------------------------------
     # NEWNEWS (3977 7.4)
@@ -634,7 +636,7 @@ class ClientConnection(nntpbits.Connection):
         if code==230:
             return self.receive_lines()
         else:
-            raise Exception("NEWNEWS command failed: %s", self.response)
+            self._failed('NEWNEWS')
 
     def _newstuff_date(date, gmt):
         if isinstance(date, list):
@@ -685,7 +687,7 @@ class ClientConnection(nntpbits.Connection):
             # configured.
             return None
         else:
-            raise Exception("LIST %s command failed: %s" % (what, self.response))
+            self._failed('LIST %s' % str(what, 'ascii'))
 
     # -------------------------------------------------------------------------
     # OVER (3977 8.3, 8.4)
@@ -719,7 +721,7 @@ class ClientConnection(nntpbits.Connection):
         elif code == 430 or code == 420:
             return None
         else:
-            raise Exception("OVER command failed: %s" % self.response)
+            self._failed('OVER')
 
     def parse_overview(self, line):
         """n.parse_overview(LINE) -> NUMBER,DICT
@@ -833,7 +835,7 @@ class ClientConnection(nntpbits.Connection):
         elif code == 430 or code == 420:
             return None
         else:
-            raise Exception("HDR command failed: %s" % self.response)
+            self._failed('HDR')
 
     # -------------------------------------------------------------------------
     # MODE STREAM (4644 2.3)

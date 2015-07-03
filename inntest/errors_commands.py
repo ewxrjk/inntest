@@ -112,6 +112,7 @@ _invalid_transit=[
     [b'IHAVE junk', 501, 435],
     [b'IHAVE <junk', 501, 435],
     [b'IHAVE <junk@example.com', 501, 435],
+    [b'IHAVE <junk@example.com> wombats', 501, 435],
 ]
 _invalid_common=[
     [b'MODE NONSENSE', 501],

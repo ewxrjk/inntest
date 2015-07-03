@@ -125,6 +125,8 @@ for cmd in [b'ARTICLE', b'HEAD', b'BODY', b'STAT']:
                 b'<junk@example.com',
                 b'junk@example.com>',
                 b'1 2',
+                b'1a',
+                b'00000000000000001',
                 b'<junk@example.com> wombats']:
         _invalid_reader.append([cmd + b' ' + arg, 501])
 

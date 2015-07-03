@@ -292,7 +292,7 @@ class ClientConnection(nntpbits.Connection):
     # LISTGROUP (3977 6.1.2)
 
     def listgroup(self, low=None, high=None, group=None):
-        """n.listgroup([LOW, HIGH, [group=GROUP]]) -> LIST
+        """n.listgroup([LOW, HIGH, [group=GROUP]]) -> COUNT, LOW, HIGH LIST
 
         Lists valid article numbers in the range LOW-HIGH.  If a group
         is specified then that group is listed; otherwise the current
@@ -310,7 +310,12 @@ class ClientConnection(nntpbits.Connection):
             cmd.append(nntpbits._normalize(group))
         code,arg=self.transact(cmd)
         if code == 211:
-            return [int(line) for line in self.receive_lines()]
+            m=_group_re.match(arg)
+            if not m:
+                raise Exception("LISTGROUP response malformed: %s" % self.response)
+            self.current_group=group
+            return (int(m.group(1)), int(m.group(2)), int(m.group(3)),
+                    [int(line) for line in self.receive_lines()])
         else:
             self._failed('LISTGROUP')
 

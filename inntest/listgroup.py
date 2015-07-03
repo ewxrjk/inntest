@@ -32,7 +32,13 @@ def test_listgroup():
         articles=_post_articles(conn)
         seen=set()
         conn.group(inntest.group)
-        for number in conn.listgroup():
+        count,low,high,numbers=conn.listgroup()
+        assert count >= len(numbers)
+        for index in range(1, len(numbers)):
+            assert numbers[index] > numbers[index-1]
+        for number in numbers:
+            assert number >= low
+            assert number <= high
             _,_,lines=conn.head(number)
             for line in lines:
                 m=_header_re.match(line)

@@ -69,6 +69,10 @@ def test_errors_outside_group():
     """
     with inntest.connection() as conn:
         conn._require_reader() # cheating
+        code,arg=conn.transact(b'LISTGROUP')
+        if code != 412:
+            raise Exception("LISTGROUP: incorrect error outside group: %s"
+                            % conn.response)
         for cmd in [b'NEXT', b'LAST']:
             code,arg=conn.transact(cmd)
             if code != 412:

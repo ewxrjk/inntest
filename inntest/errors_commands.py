@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import inntest,nntpbits
+import logging
 from inntest.list import _list_wildmat
 from inntest.errors_group import _article_commands
 
@@ -90,3 +91,74 @@ def test_errors_bad_commands():
                     raise Exception("%s: wrong response for bad argument: %s"
                                     % (cmd, conn.response))
     return ret[0]
+
+_invalid_reader=[
+    [b'GROUP', 501],
+    [B'GROUP this.that 1-10', 501],
+    [b'LISTGROUP this.that 1-10 the.other', 501],
+    [b'LISTGROUP this.that 1-10-20', 501],
+    [b'LISTGROUP this.that junk', 501],
+    [b'LAST ORDERS', 501],
+    [b'NEXT CUBE', 501],
+    [b'POST LETTER', 501],
+    [b'POST <junk@example.com>', 501],
+    [b'DATE ME', 501],
+    [b'HELP ME', 501],
+    [b'NEWGROUPS', 501],
+    [b'NEWNEWS', 501],
+]
+_invalid_transit=[
+    [b'IHAVE', 501, 435],
+    [b'IHAVE junk', 501, 435],
+    [b'IHAVE <junk', 501, 435],
+    [b'IHAVE <junk@example.com', 501, 435],
+]
+_invalid_common=[
+    [b'MODE NONSENSE', 501],
+    [b'QUIT SMOKING', 501],
+]
+
+for cmd in [b'ARTICLE', b'HEAD', b'BODY', b'STAT']:
+    for arg in [b'junk',
+                b'<junk',
+                b'<junk@example.com',
+                b'junk@example.com>',
+                b'1 2',
+                b'<junk@example.com> wombats']:
+        _invalid_reader.append([cmd + b' ' + arg, 501])
+
+def test_errors_syntax_reader():
+    """inntest.Tests.test_errors_syntax_reader()
+
+    Test for correct response to a variety of syntax errors in reader
+    mode.
+
+    """
+    with inntest.connection() as conn:
+        conn._mode_reader()
+        return _test_errors_syntax(conn, _invalid_common + _invalid_reader)
+
+def test_errors_syntax_transit():
+    """inntest.Tests.test_errors_syntax_transit()
+
+    Test for correct response to a variety of syntax errors in transit
+    mode.
+
+    """
+    with inntest.connection() as conn:
+        return _test_errors_syntax(conn, _invalid_common + _invalid_transit)
+
+def _test_errors_syntax(conn, cases):
+    ret=None
+    for case in cases:
+        cmd=case[0]
+        response=case[1]
+        code,arg=conn.transact(cmd)
+        if len(case) > 2 and code==case[2]:
+            logging.warn("EXPECTED FAILURE: %s: wrong response: %s"
+                         % (cmd, conn.response))
+            ret='expected_fail'
+        else:
+            assert code==response, ("%s: expected %d got %s"
+                                % (cmd,response,conn.response))
+    return ret

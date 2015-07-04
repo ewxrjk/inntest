@@ -1,0 +1,20 @@
+table.tests {
+  border-collapse: collapse
+}
+
+table.tests td {
+  border: 1px solid black;
+  vertical-align: top
+}
+
+td.ok {
+  background-color: #c0ffc0;
+}
+
+td.fails {
+  background-color: #ffe040
+}
+
+td.xfails, td.skips {
+  background-color: #ffe040
+}

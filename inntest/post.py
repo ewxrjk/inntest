@@ -29,8 +29,6 @@ def test_post(ident=None, description=b"posting test"):
     If DESCRIPTION is specified then it will appear in the subject
     line.
 
-    Returns True on success and False on failure.
-
     """
     ident=inntest.utils._ident(ident)
     article=[b'Newsgroups: ' + inntest.group,
@@ -83,8 +81,6 @@ def test_post_propagates(ident=None, description=b'posting propagation test'):
 
     If DESCRIPTION is specified then it will appear in the subject
     line.
-
-    Returns True on success and False on failure.
     """
     _check_post_propagates(ident, description, test_post)
 
@@ -133,8 +129,6 @@ def test_ihave(ident=None, description=b"ihave test", _pathhost=None):
     If DESCRIPTION is specified then it will appear in the subject
     line.
 
-    Returns True on success and False on failure.
-
     """
     ident=inntest.utils._ident(ident)
     if _pathhost is None:
@@ -167,8 +161,6 @@ def test_ihave_propagates(ident=None, description=b'ihave propagation test'):
 
     If DESCRIPTION is specified then it will appear in the subject
     line.
-
-    Returns True on success and False on failure.
     """
     # Need a nondefault pathhost so it will propagate back to us
     _check_post_propagates(ident, description,

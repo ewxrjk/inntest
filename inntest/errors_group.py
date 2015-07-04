@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import inntest,nntpbits
+from inntest.running import *
 
 # Commands that check or fetch part of an article by ID, number or current
 _article_commands=[b'ARTICLE', b'HEAD', b'BODY', b'STAT']
@@ -33,19 +34,19 @@ def test_errors_no_article():
         for cmd in _article_commands:
             code,arg=conn.transact([cmd, inntest.ident()])
             if code != 430:
-                raise Exception("%s: incorrect error for nonexistent article: %s"
-                                % (cmd, conn.response))
+                fail("%s: incorrect error for nonexistent article: %s"
+                     % (cmd, conn.response))
         if (b'OVER' in conn.capabilities()
             and b'MSGID' in conn.capability_arguments(b'OVER')):
             code,arg=conn.transact([b'OVER', inntest.ident()])
             if code != 430:
-                raise Exception("OVER: incorrect error for nonexistent article: %s"
-                                % (cmd, conn.response))
+                fail("OVER: incorrect error for nonexistent article: %s"
+                     % (cmd, conn.response))
         if b'HDR' in conn.capabilities():
             code,arg=conn.transact([b'HDR', b'Subject', inntest.ident()])
             if code != 430:
-                raise Exception("OVER: incorrect error for nonexistent article: %s"
-                                % (cmd, conn.response))
+                fail("OVER: incorrect error for nonexistent article: %s"
+                     % (cmd, conn.response))
 
 def test_errors_no_group():
     """inntest.Tests.test_errors_no_group()
@@ -58,8 +59,8 @@ def test_errors_no_group():
         for cmd in [b'GROUP', b'LISTGROUP']:
             code,arg=conn.transact([cmd, inntest.groupname()])
             if code != 411:
-                raise Exception("%s: incorrect error for nonexistent group: %s"
-                                % (cmd, conn.response))
+                fail("%s: incorrect error for nonexistent group: %s"
+                     % (cmd, conn.response))
 
 def test_errors_outside_group():
     """inntest.Tests.test_errors_outside_group()
@@ -71,29 +72,29 @@ def test_errors_outside_group():
         conn._require_reader() # cheating
         code,arg=conn.transact(b'LISTGROUP')
         if code != 412:
-            raise Exception("LISTGROUP: incorrect error outside group: %s"
-                            % conn.response)
+            fail("LISTGROUP: incorrect error outside group: %s"
+                 % conn.response)
         for cmd in [b'NEXT', b'LAST']:
             code,arg=conn.transact(cmd)
             if code != 412:
-                raise Exception("%s: incorrect error outside group: %s"
-                                % (cmd, conn.response))
+                fail("%s: incorrect error outside group: %s"
+                     % (cmd, conn.response))
         for cmd in _article_commands:
             code,arg=conn.transact(cmd)
             if code != 412:
-                raise Exception("%s: incorrect error outside group: %s"
-                                % (cmd, conn.response))
+                fail("%s: incorrect error outside group: %s"
+                     % (cmd, conn.response))
             # 3977 9.8: article-number = 1*16DIGIT
             for number in [1, 10**15]:
                 code,arg=conn.transact([cmd, str(number)])
             if code != 412:
-                raise Exception("%s: incorrect error outside group: %s"
-                                % (cmd, conn.response))
+                fail("%s: incorrect error outside group: %s"
+                     % (cmd, conn.response))
             for number in [10**16, '0'*16+'1']:
                 code,arg=conn.transact([cmd, str(number)])
                 if code != 501:
-                    raise Exception("%s: incorrect error for bad article-number: %s"
-                                    % (cmd, conn.response))
+                    fail("%s: incorrect error for bad article-number: %s"
+                         % (cmd, conn.response))
 
 def test_errors_group_navigation():
     """inntest.Tests.test_errors_group_navigation()
@@ -108,8 +109,8 @@ def test_errors_group_navigation():
             for delta in _number_deltas:
                 code,arg=conn.transact([cmd, '%d' % (high+delta)])
                 if code != 423:
-                    raise Exception("%s: incorrect error for bad article number: %s"
-                                    % (cmd, conn.response))
+                    fail("%s: incorrect error for bad article number: %s"
+                         % (cmd, conn.response))
         # The next two are, in theory, racy.  When using the full inntest
         # test rig this isn't really an issue as nothing will be
         # adding/removing articles.  It could be an issue when using a
@@ -118,11 +119,11 @@ def test_errors_group_navigation():
         conn.stat()         # ensure article is selected
         code,arg=conn.transact(b'LAST')
         if code != 422:
-            raise Exception("LAST: incorrect error for no previous article: %s"
-                            % conn.response)
+            fail("LAST: incorrect error for no previous article: %s"
+                 % conn.response)
         conn.stat(high)
         conn.stat()         # ensure article is selected
         code,arg=conn.transact(b'NEXT')
         if code != 421:
-            raise Exception("NEXT: incorrect error for no next article: %s"
-                            % conn.response)
+            fail("NEXT: incorrect error for no next article: %s"
+                 % conn.response)

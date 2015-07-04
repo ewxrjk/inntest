@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import inntest,nntpbits
+from inntest.running import *
 import calendar,re,time
 
 def test_date():
@@ -32,20 +33,20 @@ def test_date():
         m=re.match(b'^(\\d\\d\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)(\\d\\d)$',
                    d)
         if not m:
-            raise Exception('DATE: malformed response: %s' % d)
+            failhard('DATE: malformed response: %s' % d)
         year=int(m.group(1))
         month=int(m.group(2))
         day=int(m.group(3))
         hour=int(m.group(4))
         minute=int(m.group(5))
         second=int(m.group(6))
-        if year < 2015: raise Exception('DATE: implausible year: %s' % d)
-        if month < 1 or month > 12: raise Exception('DATE: bad month: %s' % d)
-        if day < 1 or day > 31: raise Exception('DATE: bad day: %s' % d)
-        if hour > 23: raise Exception('DATE: bad hour: %s' % d)
-        if minute > 59: raise Exception('DATE: bad minute: %s' % d)
-        if second > 59: raise Exception('DATE: bad second: %s' % d)
+        if year < 2015: fail('DATE: implausible year: %s' % d)
+        if month < 1 or month > 12: fail('DATE: bad month: %s' % d)
+        if day < 1 or day > 31: fail('DATE: bad day: %s' % d)
+        if hour > 23: fail('DATE: bad hour: %s' % d)
+        if minute > 59: fail('DATE: bad minute: %s' % d)
+        if second > 59: fail('DATE: bad second: %s' % d)
         t=calendar.timegm([year, month, day, hour, minute, second])
         delta=abs(t-now)
         if delta > 60:
-            raise Exception("DATE: inaccurate clock: %s (at %d)" % (d, now))
+            fail("DATE: inaccurate clock: %s (at %d)" % (d, now))

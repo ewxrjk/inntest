@@ -17,6 +17,7 @@
 import inntest,nntpbits
 import logging
 from inntest.errors_group import _number_deltas
+from inntest.running import *
 
 def test_errors_group_overview():
     """inntest.Tests.test_errors_group_overview()
@@ -24,30 +25,29 @@ def test_errors_group_overview():
     Test range behavior for group overview commands.
 
     """
-    skip='skip'
+    done=False
     with inntest.connection() as conn:
         conn._require_reader() # cheating
         count,low,high=conn.group(inntest.group)
         if b'OVER' in conn.capabilities():
-            skip=None
+            done=True
             for delta in _number_deltas:
                 overviews=conn.over(low+delta, high+delta)
                 if len(overviews)!=0:
-                    raise Exception("OVER: unexpected overview data: delta=%d"
-                                    % delta)
+                    fail("OVER: unexpected overview data: delta=%d"
+                         % delta)
             overviews=conn.over(high, low)
             if len(overviews)!=0:
-                raise Exception("OVER: unexpected overview data: reverse range")
+                fail("OVER: unexpected overview data: reverse range")
         if b'HDR' in conn.capabilities():
-            skip=None
+            done=True
             for delta in _number_deltas:
                 headers=conn.hdr(b'Newsgroups', low+delta, high+delta)
                 if len(headers)!=0:
-                    raise Exception("HDR: unexpected header data: delta=%d"
-                                    % delta)
+                    fail("HDR: unexpected header data: delta=%d"
+                         % delta)
             headers=conn.over(high, low)
             if len(headers)!=0:
-                raise Exception("HDR: unexpected header data: reverse range")
-        if skip=='skip':
-            logging.warn("SKIPPING TEST because no OVER or HDR capability")
-        return skip
+                fail("HDR: unexpected header data: reverse range")
+        if not done:
+            skip("no OVER or HDR capability")

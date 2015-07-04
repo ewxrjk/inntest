@@ -18,6 +18,7 @@ import inntest,nntpbits
 import logging
 from inntest.list import _list_wildmat
 from inntest.errors_group import _article_commands
+from inntest.running import *
 
 def test_errors_bad_commands():
     """inntest.Tests.test_errors_bad_commands()
@@ -30,49 +31,49 @@ def test_errors_bad_commands():
         def check(which):
             code,arg=conn.transact(b'NOTINNNTP')
             if code!=500:
-                raise Exception("Wrong response for bad command: %s"
-                                % conn.response)
+                fail("Wrong response for bad command: %s"
+                     % conn.response)
             for cmd in [b'MODE', b'LIST']:
                 code,arg=conn.transact([cmd, b'NOTINNNTP'])
                 if code!=501:
-                    raise Exception("%s: wrong response for bad argument: %s"
-                                    % (cmd, conn.response))
+                    fail("%s: wrong response for bad argument: %s"
+                         % (cmd, conn.response))
             # INN accepts this, presumably relying on 3977 s4.3
             code,arg=conn.transact([b'LIST ACTIVE',
                                     inntest.hierarchy+b'[.]*'])
             if code!=501 and code!=215:
-                raise Exception("LIST ACTIVE: wrong response for bad argument: %s"
-                                % conn.response)
+                fail("LIST ACTIVE: wrong response for bad argument: %s"
+                     % conn.response)
             if code==215:
                 conn.receive_lines()
             subcommands=conn.capability_arguments(b'LIST')
             if b'HEADERS' in subcommands:
                 code,arg=conn.transact(b'LIST HEADERS NOTINNNTP')
                 if code!=501:
-                    raise Exception("LIST HEADERS: wrong response for bad argument: %s"
-                                    % conn.response)
+                    fail("LIST HEADERS: wrong response for bad argument: %s"
+                         % conn.response)
             for subcommand in subcommands:
                 if subcommand not in _list_wildmat:
                     code,arg=conn.transact([b'LIST', subcommand, b'*'])
                     if code!=501:
-                        raise Exception("LIST %s: wrong response for bad argument: %s"
-                                        % (subcommand, conn.response))
+                        fail("LIST %s: wrong response for bad argument: %s"
+                             % (subcommand, conn.response))
         check('first')
         conn._mode_reader()     # cheating
         check("second")
         for cmd in _article_commands:
             code,arg=conn.transact([cmd, b'1', b'2', b'3'])
             if code!=501:
-                raise Exception("%s: wrong response for bad argument: %s"
-                                % (cmd, conn.response))
+                fail("%s: wrong response for bad argument: %s"
+                     % (cmd, conn.response))
             code,arg=conn.transact([cmd, b'junk'])
             if code!=501:
-                raise Exception("%s: wrong response for bad argument: %s"
-                                % (cmd, conn.response))
+                fail("%s: wrong response for bad argument: %s"
+                     % (cmd, conn.response))
             code,arg=conn.transact([cmd, b'junk@junk'])
             if code!=501:
-                raise Exception("%s: wrong response for bad argument: %s"
-                                % (cmd, conn.response))
+                fail("%s: wrong response for bad argument: %s"
+                     % (cmd, conn.response))
         for cmd in [b'NEWNEWS *', b'NEWGROUPS']:
             for arg in [b'',
                         b'990101',
@@ -88,8 +89,8 @@ def test_errors_bad_commands():
                         b'19990101 000000 00']:
                 code,arg=conn.transact([cmd,arg])
                 if code!=501:
-                    raise Exception("%s: wrong response for bad argument: %s"
-                                    % (cmd, conn.response))
+                    fail("%s: wrong response for bad argument: %s"
+                         % (cmd, conn.response))
     return ret[0]
 
 _invalid_reader=[
@@ -152,16 +153,14 @@ def test_errors_syntax_transit():
         return _test_errors_syntax(conn, _invalid_common + _invalid_transit)
 
 def _test_errors_syntax(conn, cases):
-    ret=None
     for case in cases:
         cmd=case[0]
         response=case[1]
         code,arg=conn.transact(cmd)
         if len(case) > 2 and code==case[2]:
-            logging.warn("EXPECTED FAILURE: %s: wrong response: %s"
-                         % (cmd, conn.response))
-            ret='expected_fail'
+            xfail("%s: wrong response: %s"
+                  % (cmd, conn.response))
         else:
-            assert code==response, ("%s: expected %d got %s"
-                                % (cmd,response,conn.response))
-    return ret
+            if code != response:
+                fail("%s: expected %d got %s"
+                     % (cmd,response,conn.response))

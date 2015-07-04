@@ -16,6 +16,7 @@
 #
 import inntest,nntpbits
 import logging,re
+from inntest.running import *
 
 def test_list(wildmat=None):
     """inntest.test_list()
@@ -129,9 +130,9 @@ def _test_list(conn, kw, wildmat=None):
         verify=lambda s: True
     else:
         if kw not in _list_wildmat:
-            logging.warn("SKIPPING TEST of LIST %s, don't know how to check output"
-                         % kw)
-            return 'skip'
+            skip("LIST %s, don't know how to check output"
+                 % kw)
+            return
         verify=_wildmat_to_function(wildmat)
     lines=conn.list(kw, wildmat)
     if kw is None:
@@ -139,7 +140,7 @@ def _test_list(conn, kw, wildmat=None):
     if lines is None:
         if kw in _list_optional:
             return
-        raise Exception("LIST %s: unexpected 503" % kw)
+        failhard("LIST %s: unexpected 503" % kw)
     # Find the regexp to verify/parse lines
     name='list_'+str(kw, 'ascii').replace(' ', ' ').replace('.', '_').lower()
     regex_name='_'+name+'_re'
@@ -148,9 +149,9 @@ def _test_list(conn, kw, wildmat=None):
         for line in lines:
             m=regex.match(line)
             if not m:
-                raise Exception("LIST %s: malformed line: %s" % (kw, line))
-            if not verify(m.group(1)):
-                raise Exception("LIST %s: malformed group name: %s" % (kw, line))
+                fail("LIST %s: malformed line: %s" % (kw, line))
+            elif not verify(m.group(1)):
+                fail("LIST %s: malformed group name: %s" % (kw, line))
     method_name='_check_' + name
     method=getattr(inntest.list, method_name, None)
     if method is not None:
@@ -169,18 +170,18 @@ def _check_list_overview_fmt(lines, kw):
                        b'References:']
     for i in range(0, len(_overview_initial)):
         if _overview_initial[i].lower() != lines[i].lower():
-            raise Exception("LIST OVERVIEW.FMT: header %d wrong: %s"
-                            % (i+1, lines[i]))
+            fail("LIST OVERVIEW.FMT: header %d wrong: %s"
+                 % (i+1, lines[i]))
     if lines[5].lower() != b'bytes:' and lines[5].lower() != b':bytes':
-        raise Exception("LIST OVERVIEW.FMT: header %d wrong: %s"
-                        % (6, lines[i]))
+        fail("LIST OVERVIEW.FMT: header %d wrong: %s"
+             % (6, lines[i]))
     if lines[6].lower() != b'lines:' and lines[6].lower() != b':lines':
-        raise Exception("LIST OVERVIEW.FMT: header %d wrong: %s"
-                        % (7, lines[i]))
+        fail("LIST OVERVIEW.FMT: header %d wrong: %s"
+             % (7, lines[i]))
     for i in range(7, len(lines)):
         if not lines[i].lower().endswith(b':full'):
-            raise Exception("LIST OVERVIEW.FMT: header %d partial: %s"
-                            % (i+1, lines[i]))
+            fail("LIST OVERVIEW.FMT: header %d partial: %s"
+                 % (i+1, lines[i]))
 
 def _check_list_motd(lines, kw):
     """inntest._check_list_motd(LINES, KW)
@@ -192,8 +193,8 @@ def _check_list_motd(lines, kw):
         try:
             line.decode()
         except Exception as e:
-            raise Exception("LIST MOTD: %s response is not valid UTF-8"
-                            % which)
+            fail("LIST MOTD: %s response is not valid UTF-8"
+                 % which)
 
 def _wildmat_pattern_to_re(pattern):
     """inntest._wildmat_pattern_to_re(PATTERN) -> RE

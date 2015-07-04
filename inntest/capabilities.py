@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import inntest,nntpbits
+from inntest.running import *
 
 def test_capabilities():
     """inntest.Tests.test_capabilites()
@@ -26,26 +27,26 @@ def test_capabilities():
         def check(which):
             cap = conn.capabilities()
             if len(cap) == 0:
-                raise Exception("CAPABILITIES: %s response empty/missing"
-                                % which)
+                failhard("CAPABILITIES: %s response empty/missing"
+                         % which)
             lcaps=conn.capability_arguments(b'LIST')
             if b'READER' in cap:
                 if not b'ACTIVE' in lcaps:
-                    raise Exception("CAPABILITIES: %s: READER but no LIST ACTIVE"
-                                    % which)
+                    fail("CAPABILITIES: %s: READER but no LIST ACTIVE"
+                         % which)
                 if not b'NEWSGROUPS' in lcaps:
-                    raise Exception("CAPABILITIES: %s: READER but no LIST NEWSGROUPS"
-                                    % which)
+                    fail("CAPABILITIES: %s: READER but no LIST NEWSGROUPS"
+                         % which)
             if b'OVER' in cap:
                 if not b'READER' in cap:
-                    raise Exception("CAPABILITIES: %s: OVER but no READER"
-                                    % which)
+                    fail("CAPABILITIES: %s: OVER but no READER"
+                         % which)
                 if not b'OVERVIEW.FMT' in lcaps:
-                    raise Exception("CAPABILITIES: %s: OVER but no LIST OVERVIEW.FMT"
-                                    % which)
+                    fail("CAPABILITIES: %s: OVER but no LIST OVERVIEW.FMT"
+                        % which)
         check("first")
         if b'MODE-READER' in conn.capabilities():
             conn._mode_reader()     # cheating
             if not b'READER' in conn.capabilities():
-                raise Exception("CAPABILITIES: no READER after MODE READER")
+                fail("CAPABILITIES: no READER after MODE READER")
             check("second")

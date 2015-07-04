@@ -17,6 +17,7 @@
 import inntest,nntpbits
 import logging
 from inntest.article import _post_articles,_header_re
+from inntest.running import *
 
 def test_hdr_number():
     """inntest.Tests.test_hdr_id()
@@ -27,8 +28,8 @@ def test_hdr_number():
     with inntest.connection() as conn:
         conn._require_reader() # cheating
         if not b'HDR' in conn.capabilities():
-            logging.warn("SKIPPING TEST because no HDR capability")
-            return 'skip'
+            skip("no HDR capability")
+            return
         articles=_post_articles(conn)
         count,low,high=conn.group(inntest.group)
         ident_to_number={}
@@ -52,5 +53,5 @@ def test_hdr_number():
                     if m and m.group(1) == header:
                         value=m.group(2)
                         if r_value != value:
-                            raise Exception("HDR: non-matching %s header: '%s' vs '%s'"
-                                            % (field, value, r_value))
+                            fail("HDR: non-matching %s header: '%s' vs '%s'"
+                                 % (field, value, r_value))

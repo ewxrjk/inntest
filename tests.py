@@ -73,37 +73,30 @@ def main(argv):
                       timelimit=r.timelimit,
                       trigger=r.trigger)
     tested=0
-    ok=0
-    skipped=[]
-    failed=[]
-    expected_fail=[]
+    total_success=0
+    partial_success=0
+    skips=[]
+    fails=[]
+    xfails=[]
     for test_name in r.TEST:
-        logging.info("Running test %s" % test_name)
-        try:
-            tested+=1
-            state=inntest.run_test(test_name, **args[test_name])
-            if state=='skip':
-                skipped.append(test_name)
-            elif state=='expected_fail':
-                expected_fail.append(test_name)
-            else:
-                ok+=1
-        except Exception as e:
-            logging.error("Test %s failed: %s" % (test_name, e))
-            logging.error("%s" % traceback.format_exc())
-            failed.append(test_name)
-    logging.info("%d/%d tests succeeded" % (ok, tested))
-    if len(skipped) > 0:
-        logging.warn("SKIPPED tests: %s" % ", ".join(skipped))
-    if len(expected_fail) > 0:
-        logging.warn("EXPECTED FAIL tests: %s" % ", ".join(expected_fail))
-    if len(failed) > 0:
-        logging.error("FAILED tests: %s" % ", ".join(failed))
-    elif len(expected_fail) > 0:
-        logging.info("QUALIFIED SUCCESS")
-    else:
-        logging.info("SUCCESS")
-    return 1 if len(failed) > 0 else 0
+        tested+=1
+        t_fails,t_xfails,t_skips=inntest.run_test(test_name, **args[test_name])
+        fails.extend(t_fails)
+        xfails.extend(t_xfails)
+        skips.extend(t_skips)
+        if len(t_fails) + len(t_xfails) + len(t_skips) == 0:
+            total_success+=1
+        elif len(fails) == 0:
+            partial_success+=1
+    logging.info("%d test cases, %d total success, %d partial success"
+                 % (tested, total_success, partial_success))
+    if len(skips) > 0:
+        logging.warn("%d skips" % len(skips))
+    if len(xfails) > 0:
+        logging.warn("%d expected fails" % len(xfails))
+    if len(fails) > 0:
+        logging.error("%d fails" % len(fails))
+    return 1 if len(fails) > 0 else 0
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

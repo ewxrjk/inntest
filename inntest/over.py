@@ -17,6 +17,7 @@
 import inntest,nntpbits
 import logging
 from inntest.article import _post_articles, _check_article
+from inntest.running import *
 
 def test_over_id():
     """inntest.Tests.test_over_id()
@@ -30,11 +31,11 @@ def test_over_id():
     with inntest.connection() as conn:
         conn._require_reader() # cheating
         if not b'OVER' in conn.capabilities():
-            logging.warn("SKIPPING TEST because no OVER capability")
-            return 'skip'
+            skip("no OVER capability")
+            return
         if not b'MSGID' in conn.capability_arguments(b'OVER'):
-            logging.warn("SKIPPING TEST because no OVER MSGID capability")
-            return 'skip'
+            skip("no OVER MSGID capability")
+            return
         articles=_post_articles(conn)
         count,low,high=conn.group(inntest.group)
         for ident,article in articles:
@@ -54,8 +55,8 @@ def test_over_number():
     with inntest.connection() as conn:
         conn._require_reader() # cheating
         if not b'OVER' in conn.capabilities():
-            logging.warn("SKIPPING TEST because no OVER capability")
-            return 'skip'
+            skip("no OVER capability")
+            return
         articles=_post_articles(conn)
         count,low,high=conn.group(inntest.group)
         overviews=conn.over(low,high)
@@ -70,8 +71,8 @@ def test_over_number():
                           if h not in conn.list_overview_fmt()])
         for ident,article in articles:
             if not ident in ov:
-                raise Exception("OVER: didn't find article %s"
-                                % ident)
+                failhard("OVER: didn't find article %s"
+                         % ident)
             _check_article(b'OVER', ident, article,
                            ov[ident], None, ov[ident][b'message-id:'],
                            allowmissing,

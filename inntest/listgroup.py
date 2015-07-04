@@ -17,6 +17,7 @@
 import inntest,nntpbits
 import logging
 from inntest.article import _post_articles,_header_re
+from inntest.running import *
 
 def test_listgroup():
     """inntest.Tests.test_listgroup()
@@ -27,8 +28,8 @@ def test_listgroup():
     with inntest.connection() as conn:
         conn._require_reader() # cheating
         if not b'HDR' in conn.capabilities():
-            logging.warn("SKIPPING TEST because no HDR capability")
-            return 'skip'
+            skip("no HDR capability")
+            return
         articles=_post_articles(conn)
         seen=set()
         conn.group(inntest.group)
@@ -47,4 +48,4 @@ def test_listgroup():
                     break
         for ident,article in articles:
             if not ident in seen:
-                raise Exception("LISTGROUP: failed to list %s" % ident)
+                fail("LISTGROUP: failed to list %s" % ident)

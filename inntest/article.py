@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import inntest,nntpbits
+from inntest.running import *
 import logging,re
 
 def test_article_id():
@@ -31,8 +32,8 @@ def test_article_id():
             for ident,article in articles:
                 r_number,r_ident,r=method(ident)
                 if ident != r_ident:
-                    raise Exception("%s: returned wrong ident (%s vs %s)"
-                                    % (cmd, ident, r_ident))
+                    failhard("%s: returned wrong ident (%s vs %s)"
+                             % (cmd, ident, r_ident))
                 r_header,r_body,r_ident=parse(r)
                 _check_article(cmd, ident, article,
                                r_header, r_body, r_ident)
@@ -59,11 +60,11 @@ def test_article_number():
                 number=ident_to_number[ident]
                 r_number,r_ident,r=getattr(conn, cmd)(number)
                 if ident != r_ident:
-                    raise Exception("%s: returned wrong ident (%s vs %s)"
-                                    % (cmd, ident, r_ident))
+                    failhard("%s: returned wrong ident (%s vs %s)"
+                             % (cmd, ident, r_ident))
                 if number != r_number:
-                    raise Exception("%s: returned wrong number (%d vs %d)"
-                                    % (number, ident, r_number))
+                    failhard("%s: returned wrong number (%d vs %d)"
+                             % (number, ident, r_number))
                 r_header,r_body,r_ident=parse(r)
                 _check_article(cmd, ident, article,
                                r_header, r_body, r_ident)
@@ -95,16 +96,16 @@ overview -- apply overview-specific transformations
     if r_ident is not None:
         logging.debug("%s <-> %s" % (ident, r_ident))
         if r_ident != ident:
-            raise Exception("%s: ID mismatch (%s vs %s)"
-                            % (cmd, ident, r_ident))
+            failhard("%s: ID mismatch (%s vs %s)"
+                     % (cmd, ident, r_ident))
     # Headers we supplied should match
     if r_header is not None:
         for field in header:
             if field not in r_header:
                 if field in allow_missing:
                     continue
-                raise Exception("%s: missing %s header"
-                                % (cmd, field))
+                failhard("%s: missing %s header"
+                         % (cmd, field))
             value=header[field]
             r_value=r_header[field]
             if overview:
@@ -112,13 +113,13 @@ overview -- apply overview-specific transformations
                 value=re.sub(b'\t', b' ', value)
             logging.debug("%s: %s <-> %s" % (field, value, r_value))
             if inntest.trim(r_value) != inntest.trim(value):
-                raise Exception("%s: non-matching %s header: '%s' vs '%s'"
-                                % (cmd, field, value, r_value))
+                fail("%s: non-matching %s header: '%s' vs '%s'"
+                     % (cmd, field, value, r_value))
     # Body should match
     if r_body is not None:
         if body != r_body:
-            raise Exception("%s: non-matching body: '%s' vs '%s'"
-                                % (cmd, body, r_body))
+            fail("%s: non-matching body: '%s' vs '%s'"
+                 % (cmd, body, r_body))
 
 _header_re=re.compile(b'^([a-zA-Z0-9\\-]+:)\\s+(.*)$')
 
@@ -147,12 +148,12 @@ def _parse_article(article):
             continue
         if line[0:1] in b' \t':
             if field is None:
-                raise Exception("Malformed article: %s" % article)
+                failhard("Malformed article: %s" % article)
             header[field]+=b'\n'+line
             continue
         m=_header_re.match(line)
         if not m:
-            raise Exception("Malformed article: %s" % article)
+            failhard("Malformed article: %s" % article)
         field=m.group(1).lower()
         header[field]=m.group(2)
     return header,body,header[b'message-id:']

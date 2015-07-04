@@ -16,6 +16,7 @@
 #
 import inntest,nntpbits
 import logging,time
+from inntest.running import *
 
 def test_errors_bad_post():
     """inntest.Tests.test_errors_bad_post()
@@ -45,7 +46,6 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
     Test IHAVE/POST error behavior.
 
     """
-    expected_fails=0
     def check(what, article, ident=None,
               error_response=error_response, add_body=True,
               expected_fail=False, extras=extras):
@@ -65,13 +65,11 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
             code,arg=conn.wait()
         if code!=error_response:
             if expected_fail:
-                logging.warn("EXPECTED FAILURE: %s: wrong response for %s: %d"
-                             % (cmd, what, code))
-                nonlocal expected_fails
-                expected_fails+=1
+                xfail("%s: wrong response for %s: %d"
+                      % (cmd, what, code))
             else:
-                raise Exception("%s: wrong response for %s: %d"
-                                % (cmd, what, code))
+                fail("%s: wrong response for %s: %d"
+                     % (cmd, what, code))
     ## Missing things
     check('no subject',
           [b'Newsgroups: ' + inntest.group,
@@ -222,5 +220,3 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
                b'From: ' + inntest.email,
                b'Subject: [nntpbits] nonexistent group test (ignore)',
                b'Date: ' + inntest.newsdate()])
-    if expected_fails > 0:
-        return 'expected_fail'

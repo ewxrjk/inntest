@@ -17,6 +17,7 @@
 import inntest,nntpbits
 import logging,time
 from inntest.article import _post_articles
+from inntest.running import *
 
 def test_newnews():
     """inntest.Tests.test_newnews()
@@ -27,8 +28,8 @@ def test_newnews():
     with inntest.connection() as conn:
         conn._require_reader() # cheating
         if not b'NEWNEWS' in conn.capabilities():
-            logging.warn("SKIPPING TEST because no NEWNEWS capability")
-            return 'skip'
+            skip("no NEWNEWS capability")
+            return
         start=conn.date()
         while start==conn.date():
             time.sleep(0.25)
@@ -37,11 +38,11 @@ def test_newnews():
         new_idents=set(conn.newnews(inntest.hierarchy+b'.*', start))
         for ident,article in articles:
             if ident not in new_idents:
-                raise Exception("NEWNEWS: did not find %s" % ident)
+                fail("NEWNEWS: did not find %s" % ident)
         new_idents=set(conn.newnews(inntest.group, start))
         for ident,article in articles:
             if ident not in new_idents:
-                raise Exception("NEWNEWS: did not find %s" % ident)
+                fail("NEWNEWS: did not find %s" % ident)
         new_idents=set(conn.newnews(b'!*', start))
         if len(new_idents) > 0:
-            raise Exception("NEWNEWS: return articles for empty wildmat")
+            fail("NEWNEWS: return articles for empty wildmat")

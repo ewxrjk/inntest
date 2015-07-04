@@ -16,6 +16,7 @@
 #
 import inntest,nntpbits
 import logging,os,time
+from inntest.running import *
 
 def test_post(ident=None, description=b"posting test"):
     """inntest.Tests.test_post([ident=IDENT][description=SUBJECT])
@@ -55,7 +56,7 @@ def _check_posted(conn, ident):
     """
     _,_,article_posted=conn.article(ident)
     if article_posted is None:
-        raise Exception("article cannot be retrieved by message-ID")
+        fail("article cannot be retrieved by message-ID")
     (count,low,high)=conn.group(inntest.group)
     overviews=conn.over(low,high)
     number_in_group=None
@@ -65,10 +66,10 @@ def _check_posted(conn, ident):
             number_in_group=number
             break
     if number_in_group is None:
-        raise Exception("article not found in group overview data")
+        fail("article not found in group overview data")
     _,_,article_posted=conn.article(number_in_group)
     if article_posted is None:
-        raise Exception("article cannot be retrieved from group")
+        fail("article cannot be retrieved from group")
 
 def test_post_propagates(ident=None, description=b'posting propagation test'):
     """inntest.Tests.test_post_propagates([ident=IDENT][description=SUBJECT])
@@ -108,11 +109,11 @@ def _check_post_propagates(ident, description,
                 logging.info("execute: %s" % inntest.trigger)
                 rc=os.system(inntest.trigger)
                 if rc != 0:
-                    logging.error("Trigger wait status: %#04x" % rc)
+                    failhard("Trigger wait status: %#04x" % rc)
                 next_trigger=time.time()+inntest.trigger_timeout
             time.sleep(0.5)
         if ident not in s.ihave_submitted:
-            raise Exception("article never propagated")
+            fail("article never propagated")
 
 def test_post_no_message_id():
     """inntest.Tests.test_no_message_id()

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import inntest,nntpbits
+from inntest.running import *
 
 def test_help():
     """inntest.Tests.test_help()
@@ -29,8 +30,8 @@ def test_help():
                 try:
                     line.decode()
                 except Exception as e:
-                    raise Exception("HELP: %s response is not valid UTF-8"
-                                    % which)
+                    fail("HELP: %s response is not valid UTF-8"
+                         % which)
         check("first")
         conn._mode_reader()     # cheating
         check("second")

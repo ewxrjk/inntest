@@ -65,7 +65,8 @@ def test_over_number():
             ov[overview[b'message-id:']]=overview
         allowmissing=set([h
                           for h in [b'newsgroups:', b'keywords:',
-                                    b'organization:', b'user-agent:']
+                                    b'organization:', b'user-agent:',
+                                    b'nonsense:']
                           if h not in conn.list_overview_fmt()])
         for ident,article in articles:
             if not ident in ov:

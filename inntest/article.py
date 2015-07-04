@@ -250,4 +250,16 @@ def _post_articles(conn):
     conn.post(article)
     articles.append([ident, article])
 
+    # Lots of junk headers to blow HEADER_DELTA limit in nnrpd/post.c
+    ident=inntest.utils._ident()
+    article=([b'Newsgroups: ' + inntest.group,
+              b'From: \t' + inntest.email,
+              b'Subject: [nntpbits] articles-madeup-headers (ignore)',
+              b'Message-ID: ' + ident]
+             +[b'Nonsense: whatever']*40+
+             [b'',
+              inntest.utils._unique()])
+    conn.post(article)
+    articles.append([ident, article])
+
     return articles

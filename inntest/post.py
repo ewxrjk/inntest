@@ -114,6 +114,30 @@ def _check_post_propagates(ident, description,
         if ident not in s.ihave_submitted:
             raise Exception("article never propagated")
 
+def test_post_no_message_id():
+    """inntest.Tests.test_no_message_id()
+
+    Posts to the test newsgroup without a Message-ID header and
+    verifies that the article appears.
+
+    """
+    unique=inntest.utils._unique()
+    article=[b'Newsgroups: ' + inntest.group,
+             b'From: ' + inntest.email,
+             b'Subject: [nntpbits] no message id (ignore)',
+             b'',
+             unique]
+    with inntest.connection() as conn:
+        conn.post(article)
+        count,low,high=conn.group(inntest.group)
+        found=False
+        for number in range(high,low-1,-1):
+            r_number,r_ident,r_body=conn.body(number)
+            if r_body==[unique]:
+                found=True
+                break
+        assert found
+
 # -------------------------------------------------------------------------
 # Testing IHAVE
 

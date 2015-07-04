@@ -76,7 +76,20 @@ def _article_lookup_commands():
 
 def _check_article(cmd, ident, article,
                    r_header, r_body, r_ident,
-                   _allow_missing=set([])):
+                   allow_missing=set([]),
+                   overview=False):
+    """_check_article(CMD, IDENT, ARTICLE,
+               R_HEADER, R_BODY, R_IDENT) -> None|'expected_failed'
+
+Verifies that the received r_HEADER, R_BODY and R_IDENT match the
+expected ARTICLE and IDENT.  CMD is the command used to fetch them.
+
+Optional arguments:
+allowing_missing -- set of headers that are allowed to be missing
+overview -- apply overview-specific transformations
+
+    """
+
     header,body,_=_parse_article(article)
     # Ident should match
     if r_ident is not None:
@@ -88,14 +101,17 @@ def _check_article(cmd, ident, article,
     if r_header is not None:
         for field in header:
             if field not in r_header:
-                if field in _allow_missing:
+                if field in allow_missing:
                     continue
                 raise Exception("%s: missing %s header"
                                 % (cmd, field))
             value=header[field]
             r_value=r_header[field]
+            if overview:
+                value=re.sub(b'\n', b'', value)
+                value=re.sub(b'\t', b' ', value)
             logging.debug("%s: %s <-> %s" % (field, value, r_value))
-            if r_value != value:
+            if inntest.utils._trim(r_value) != inntest.utils._trim(value):
                 raise Exception("%s: non-matching %s header: '%s' vs '%s'"
                                 % (cmd, field, value, r_value))
     # Body should match
@@ -197,6 +213,38 @@ def _post_articles(conn):
              b'Subject: [nntpbits] articles-user-agent (ignore)',
              b'Message-ID: ' + ident,
              b'User-Agent: test.terraraq.uk',
+             b'',
+             inntest.utils._unique()]
+    conn.post(article)
+    articles.append([ident, article])
+
+    ident=inntest.utils._ident()
+    article=[b'Newsgroups: ' + inntest.group,
+             b'From: ' + inntest.email + b'   ',
+             b'Subject: [nntpbits] articles-trailing-space (ignore)\t',
+             b'Message-ID: ' + ident,
+             b'',
+             inntest.utils._unique()]
+    conn.post(article)
+    articles.append([ident, article])
+
+    ident=inntest.utils._ident()
+    article=[b'Newsgroups: ' + inntest.group,
+             b'From: \t' + inntest.email,
+             b'Subject: [nntpbits] articles-leading-space (ignore)',
+             b'Message-ID:     ' + ident,
+             b'',
+             inntest.utils._unique()]
+    conn.post(article)
+    articles.append([ident, article])
+
+    ident=inntest.utils._ident()
+    article=[b'Newsgroups: ' + inntest.group,
+             b'From: inntest',
+             b' <' + inntest.email + b'>',
+             b'Subject: [nntpbits] articles-folding-space (ignore)',
+             b' (folded)',
+             b'Message-ID: ' + ident,
              b'',
              inntest.utils._unique()]
     conn.post(article)

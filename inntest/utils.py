@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import inntest,nntpbits
-import base64,hashlib,logging,os,struct,threading,time
+import base64,hashlib,logging,os,re,struct,threading,time
 
 seed=os.urandom(32)
 sequence=0
@@ -78,6 +78,16 @@ def _date(when=None):
     return bytes(time.strftime("%a, %d %b %Y %H:%M:%S +0000",
                                time.gmtime(when)),
                  'ascii')
+
+_trim_re=re.compile(b'(^[ \t]*|[ \t]*$)')
+
+def _trim(s):
+    """inntest.utils_trim(S) -> BYTES
+
+    Trims leading and trailing whitespace from S.
+
+    """
+    return _trim_re.sub(b'', s)
 
 # -------------------------------------------------------------------------
 # Local server support

@@ -49,7 +49,7 @@ def test_hdr_number():
                     if line==b'':
                         break
                     m=_header_re.match(line)
-                    if m.group(1) == header:
+                    if m and m.group(1) == header:
                         value=m.group(2)
                         if r_value != value:
                             raise Exception("HDR: non-matching %s header: '%s' vs '%s'"

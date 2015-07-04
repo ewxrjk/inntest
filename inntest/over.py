@@ -41,7 +41,9 @@ def test_over_id():
             overviews=conn.over(ident)
             number,overview=conn.parse_overview(overviews[0])
             _check_article(b'OVER', ident, article,
-                           overview, None, overview[b'message-id:'])
+                           overview, None,
+                           overview[b'message-id:'],
+                           overview=True)
 
 def test_over_number():
     """inntest.Tests.test_over_id()
@@ -71,4 +73,5 @@ def test_over_number():
                                 % ident)
             _check_article(b'OVER', ident, article,
                            ov[ident], None, ov[ident][b'message-id:'],
-                           allowmissing)
+                           allowmissing,
+                           overview=True)

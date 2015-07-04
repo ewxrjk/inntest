@@ -42,7 +42,7 @@ def test_listgroup():
             _,_,lines=conn.head(number)
             for line in lines:
                 m=_header_re.match(line)
-                if m.group(1).lower()==b'message-id:':
+                if m and m.group(1).lower()==b'message-id:':
                     seen.add(m.group(2))
                     break
         for ident,article in articles:

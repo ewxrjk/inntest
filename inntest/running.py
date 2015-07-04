@@ -62,7 +62,7 @@ def run_test(test_name, *args, **kwargs):
     _skips=[]
     _testname=test_name
     if _log is None:
-        log(logging.getLogger())
+        log(logging.getLogger(__name__))
     method=getattr(inntest, test_name, None)
     if method is None:
         raise Exception("no such test as '%s'" % test_name)

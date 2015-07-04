@@ -37,6 +37,7 @@ class NewsServer(object):
     def __init__(self, conncls=nntpbits.ServerConnection):
         self.conncls=conncls
         self.lock=threading.Lock()
+        self.log=logging.getLogger(__name__)
 
     # -------------------------------------------------------------------------
     # Listening
@@ -61,19 +62,19 @@ class NewsServer(object):
                 continue
             def worker(ns, a):
                 try:
-                    logging.info("%x: connected %s"
-                                 % (threading.get_ident(), a))
-                    self.conncls(self).socket(ns)
-                    logging.info("%x: disconnected %s"
-                                 % (threading.get_ident(), a))
-                except nntpbits._Stop:
-                    logging.debug("%x: client stopped %s"
+                    self.log.info("%x: connected %s"
                                   % (threading.get_ident(), a))
+                    self.conncls(self).socket(ns)
+                    self.log.info("%x: disconnected %s"
+                                  % (threading.get_ident(), a))
+                except nntpbits._Stop:
+                    self.log.debug("%x: client stopped %s"
+                                   % (threading.get_ident(), a))
                 except BaseException as e:
-                    logging.error("%x: client error: %s %s"
-                                  % (threading.get_ident(), e, a))
-                    logging.error("%x: %s"
-                                  % (threading.get_ident(), traceback.format_exc()))
+                    self.log.error("%x: client error: %s %s"
+                                   % (threading.get_ident(), e, a))
+                    self.log.error("%x: %s"
+                                   % (threading.get_ident(), traceback.format_exc()))
                 finally:
                     nntpbits.finished_thread()
             t=threading.Thread(target=worker, args=[ns,a], daemon=daemon)
@@ -115,18 +116,18 @@ class NewsServer(object):
             s.listen(socket.SOMAXCONN)
             def worker(s, sockaddr):
                 try:
-                    logging.info("%x: listener started %s"
+                    self.log.info("%x: listener started %s"
                                  % (threading.get_ident(), sockaddr))
                     self.listen_socket(s, daemon=daemon)
-                    logging.info("%x: listener returned"
+                    self.log.info("%x: listener returned"
                                  % (threading.get_ident()))
                 except nntpbits._Stop:
-                    logging.debug("%x: listener stopped %s"
+                    self.log.debug("%x: listener stopped %s"
                                   % (threading.get_ident(), sockaddr))
                 except BaseException as e:
-                    logging.error("%x: listener error %s %s"
+                    self.log.error("%x: listener error %s %s"
                                   % (threading.get_ident(), e, sockaddr))
-                    logging.error("%x: %s"
+                    self.log.error("%x: %s"
                                   % (threading.get_ident(),
                                      traceback.format_exc()))
                 finally:

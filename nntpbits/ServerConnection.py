@@ -96,6 +96,7 @@ class ServerConnection(nntpbits.Connection):
         }
         self.capabilities=[b"VERSION 2",
                            b"IMPLEMENTATION inntest"]
+        self.log=logging.getLogger(__name__)
 
     def _reset(self):
         """s._reset()
@@ -136,22 +137,23 @@ class ServerConnection(nntpbits.Connection):
         """
         self.commands[nntpbits._normalize(command).upper()]=callback
 
-    def respond(self, response, description=None, log=None, flush=True,
+    def respond(self, response, description=None, log_type=None, flush=True,
                 detail=""):
         """s.respond(RESPONSE, DESCRIPTION)
 
         Send an error message to the peer.
 
         """
-        if log is None and response >= 500:
-            log=logging.error
+        if log_type is None and response >= 500:
+            log_type='error'
         if description is None:
             if response in _responses:
                 description=_responses[response]
             else:
                 description="Derp"
-        if log is not None:
-            log("%x: %s %s" % (threading.get_ident(), description, detail))
+        if log_type is not None:
+            method=getattr(self.log, log_type)
+            method("%x: %s %s" % (threading.get_ident(), description, detail))
         self.send_line("%d %s" % (response, description), flush=flush)
 
     def command(self, cmd):

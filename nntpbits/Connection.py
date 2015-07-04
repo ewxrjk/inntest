@@ -36,6 +36,7 @@ class Connection(object):
         self.eol=eol
         self.sock=None
         self.stoppable=stoppable
+        self.log=logging.getLogger(__name__)
 
     def files(self, r, w):
         """p.files(r=READER, w=WRITER)
@@ -86,7 +87,7 @@ class Connection(object):
         """
         if isinstance(line, list):
             line=b' '.join(nntpbits._normalize(line))
-        logging.debug("SEND %s" % line)
+        self.log.debug("SEND %s" % line)
         self.w.write(nntpbits._normalize(line))
         self.w.write(b'\r\n')
         if flush:
@@ -187,7 +188,7 @@ class Connection(object):
                 return None
             line += ch
         line=line[0:-len(self.eol)]
-        logging.debug("RECV %s" % line)
+        self.log.debug("RECV %s" % line)
         return line
 
     def _complete(self, line):

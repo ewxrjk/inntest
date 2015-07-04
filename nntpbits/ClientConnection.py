@@ -50,6 +50,7 @@ class ClientConnection(nntpbits.Connection):
         self.nntp_user=nntpbits._normalize(nntp_user)
         self.nntp_password=nntpbits._normalize(nntp_password)
         self._reset()
+        self.log=logging.getLogger(__name__)
         if address is not None:
             self.connect(address, timeout, source_address)
 
@@ -57,7 +58,7 @@ class ClientConnection(nntpbits.Connection):
         return self
 
     def __exit__(self, et, ev, etb):
-        logging.debug("ClientConnection.__exit__: %s / %s / %s" % (et, ev, etb))
+        self.log.debug("ClientConnection.__exit__: %s / %s / %s" % (et, ev, etb))
         if self.r is not None or self.w is not None:
             self.quit()
         return False
@@ -89,7 +90,7 @@ class ClientConnection(nntpbits.Connection):
         source_address -- host,port tuple to bind local endpoint to
 
         """
-        logging.debug("Connecting to %s port %s" % address)
+        self.log.debug("Connecting to %s port %s" % address)
         self.socket(socket.create_connection(address, timeout,
                                              source_address))
 
@@ -143,13 +144,13 @@ class ClientConnection(nntpbits.Connection):
             if code==281:
                 return True
             if code!=381:
-                logging.error("username %s not accepted" % user)
+                self.log.error("username %s not accepted" % user)
                 return False
         if password is not None:
             code,arg=self.transact([b'AUTHINFO', b'PASS', password])
             if code==281:
                 return True
-            logging.error("password not accepted")
+            self.log.error("password not accepted")
         return False
 
     def _failed(self, command):

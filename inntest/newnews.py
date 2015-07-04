@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import inntest,nntpbits
-import logging,time
+import time
 from inntest.article import _post_articles
 from inntest.running import *
 

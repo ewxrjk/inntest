@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import inntest,nntpbits
-import logging,time
+import time
 from inntest.running import *
 
 def test_errors_bad_post():

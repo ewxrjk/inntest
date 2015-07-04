@@ -15,7 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import inntest,nntpbits
-import base64,hashlib,logging,os,re,struct,threading,time
+import base64,hashlib,os,re,struct,threading,time
+from inntest.running import *
 
 _seed=os.urandom(32)
 _sequence=0
@@ -107,7 +108,7 @@ class TestServer(nntpbits.NewsServer):
 
     def __exit__(self, et, ev, etb):
         if et is not None:
-            logging.debug("TestServer.__exit__: %s / %s / %s" % (et, ev, etb))
+            log().debug("TestServer.__exit__: %s / %s / %s" % (et, ev, etb))
         nntpbits.stop()
         return False
 

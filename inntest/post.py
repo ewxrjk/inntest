@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import inntest,nntpbits
-import logging,os,time
+import os,time
 from inntest.running import *
 
 def test_post(ident=None, description=b"posting test"):
@@ -106,7 +106,7 @@ def _check_post_propagates(ident, description,
             # Repeat the trigger if it's not helping
             if (inntest.trigger is not None
                    and next_trigger <= time.time()):
-                logging.info("execute: %s" % inntest.trigger)
+                log().info("execute: %s" % inntest.trigger)
                 rc=os.system(inntest.trigger)
                 if rc != 0:
                     failhard("Trigger wait status: %#04x" % rc)

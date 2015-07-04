@@ -15,7 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import inntest,nntpbits
-import logging
 from inntest.list import _list_wildmat
 from inntest.errors_group import _article_commands
 from inntest.running import *

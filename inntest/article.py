@@ -16,7 +16,7 @@
 #
 import inntest,nntpbits
 from inntest.running import *
-import logging,re
+import re
 
 def test_article_id():
     """inntest.Tests.test_article_id()
@@ -27,7 +27,7 @@ def test_article_id():
     with inntest.connection() as conn:
         articles=_post_articles(conn)
         for cmd,parse in _article_lookup_commands():
-            logging.debug("test_article_id %s" % cmd)
+            log().debug("test_article_id %s" % cmd)
             method=getattr(conn, cmd)
             for ident,article in articles:
                 r_number,r_ident,r=method(ident)
@@ -55,7 +55,7 @@ def test_article_number():
                     ident_to_number[ident]=r_number
             r_number,r_ident,_=conn.next()
         for cmd,parse in _article_lookup_commands():
-            logging.debug("test_article_number %s" % cmd)
+            log().debug("test_article_number %s" % cmd)
             for ident,article in articles:
                 number=ident_to_number[ident]
                 r_number,r_ident,r=getattr(conn, cmd)(number)
@@ -94,7 +94,7 @@ overview -- apply overview-specific transformations
     header,body,_=_parse_article(article)
     # Ident should match
     if r_ident is not None:
-        logging.debug("%s <-> %s" % (ident, r_ident))
+        log().debug("%s <-> %s" % (ident, r_ident))
         if r_ident != ident:
             failhard("%s: ID mismatch (%s vs %s)"
                      % (cmd, ident, r_ident))
@@ -111,7 +111,7 @@ overview -- apply overview-specific transformations
             if overview:
                 value=re.sub(b'\n', b'', value)
                 value=re.sub(b'\t', b' ', value)
-            logging.debug("%s: %s <-> %s" % (field, value, r_value))
+            log().debug("%s: %s <-> %s" % (field, value, r_value))
             if inntest.trim(r_value) != inntest.trim(value):
                 fail("%s: non-matching %s header: '%s' vs '%s'"
                      % (cmd, field, value, r_value))

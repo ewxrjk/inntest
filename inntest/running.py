@@ -22,6 +22,20 @@ _xfails=[]
 _skips=[]
 _testname=None
 
+_log=None
+
+def log(newlog=None):
+    """log() -> LOGGER
+    log(LOGGER) -> LOGGER
+
+    Get or set the logging.Logger to use within the test system.
+
+    """
+    global _log
+    if newlog is not None:
+        _log=newlog
+    return _log
+
 class _Failed(Exception):
     pass
 
@@ -47,17 +61,19 @@ def run_test(test_name, *args, **kwargs):
     _xfails=[]
     _skips=[]
     _testname=test_name
+    if _log is None:
+        log(logging.getLogger())
     method=getattr(inntest, test_name, None)
     if method is None:
         raise Exception("no such test as '%s'" % test_name)
     try:
-        logging.info("Running test %s" % test_name)
+        _log.info("Running test %s" % test_name)
         method(*args, **kwargs)
     except _Failed as e:
-        logging.error("%s" % traceback.format_exc())
+        _log.error("%s" % traceback.format_exc())
     except Exception as e:
-        logging.error("Test %s failed: %s" % (test_name, e))
-        logging.error("%s" % traceback.format_exc())
+        _log.error("Test %s failed: %s" % (test_name, e))
+        _log.error("%s" % traceback.format_exc())
         _fails.append(e)
     return (_fails, _xfails, _skips)
 
@@ -65,7 +81,7 @@ def fail(description):
     """inntest.running.fail(DESCRIPTION)
 
     Log a non-fatal failure."""
-    logging.warn("Test %s FAILURE: %s" % (_testname, description))
+    _log.warn("Test %s FAILURE: %s" % (_testname, description))
     _fails.append(description)
 
 def failhard(description):
@@ -75,7 +91,7 @@ def failhard(description):
     returning.
 
     """
-    logging.error("Test %s FAILURE: %s" % (_testname, description))
+    _log.error("Test %s FAILURE: %s" % (_testname, description))
     _fails.append(description)
     raise _Failed(description)
 
@@ -83,7 +99,7 @@ def xfail(description):
     """inntest.running.xfail(DESCRIPTION)
 
     Log a non-fatal expected failure."""
-    logging.warn("Test %s EXPECTED FAILURE: %s" % (_testname, description))
+    _log.warn("Test %s EXPECTED FAILURE: %s" % (_testname, description))
     _xfails.append(description)
 
 def xfailhard(description):
@@ -93,7 +109,7 @@ def xfailhard(description):
     returning.
 
     """
-    logging.error("Test %s EXPECTED FAILURE: %s" % (_testname, description))
+    _log.error("Test %s EXPECTED FAILURE: %s" % (_testname, description))
     _xfails.append(description)
     raise _Failed(description)
 
@@ -101,5 +117,5 @@ def skip(description):
     """inntest.running.skip(DESCRIPTION)
 
     Log a skipped test."""
-    logging.warn("Test %s SKIPPED: %s" % (_testname, description))
+    _log.warn("Test %s SKIPPED: %s" % (_testname, description))
     _skips.append(description)

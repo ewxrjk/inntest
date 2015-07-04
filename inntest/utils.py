@@ -17,12 +17,12 @@
 import inntest,nntpbits
 import base64,hashlib,logging,os,re,struct,threading,time
 
-seed=os.urandom(32)
-sequence=0
-lock=threading.Lock()
+_seed=os.urandom(32)
+_sequence=0
+_lock=threading.Lock()
 
-def _unique(alphabet=None):
-    """inntest.utils._unique() -> BYTES
+def unique(alphabet=None):
+    """inntest.unique() -> BYTES
 
     Returns a unique (but not necessarily unpredictable) string.
     This is used for picking message IDs.
@@ -32,12 +32,12 @@ def _unique(alphabet=None):
 
     """
     while True:
-        with lock:
-            global sequence
-            latest=sequence
-            sequence+=1
+        with _lock:
+            global _sequence
+            latest=_sequence
+            _sequence+=1
         h=hashlib.sha256()
-        h.update(seed)
+        h.update(_seed)
         h.update(struct.pack("<q", latest))
         # base64 is 3 bytes into 4 characters, so truncate to a
         # multiple of 3.
@@ -51,23 +51,23 @@ def _unique(alphabet=None):
         if suitable:
             return unique
 
-def _groupname():
-    return inntest.hierarchy+b'.'+_unique(b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+def groupname():
+    return inntest.hierarchy+b'.'+unique(b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
-def _ident(ident=None):
-    """inntest.utils._ident([IDENT]) -> IDENT
+def ident(ident=None):
+    """inntest.ident([IDENT]) -> IDENT
 
     Returns a message ID.  If IDENT is None, one is picked;
     otherwise IDENT is used.
 
     """
     if ident is None:
-        return b'<' + _unique() + b'@' + inntest.domain + b'>'
+        return b'<' + unique() + b'@' + inntest.domain + b'>'
     else:
         return nntpbits._normalize(ident)
 
-def _date(when=None):
-    """inntest.utils._date() -> BYTES
+def newsdate(when=None):
+    """inntest.newsdate() -> BYTES
 
     Returns the date in a format suitable for use in news
     articles.
@@ -81,8 +81,8 @@ def _date(when=None):
 
 _trim_re=re.compile(b'(^[ \t]*|[ \t]*$)')
 
-def _trim(s):
-    """inntest.utils_trim(S) -> BYTES
+def trim(s):
+    """inntest.trim(S) -> BYTES
 
     Trims leading and trailing whitespace from S.
 
@@ -93,7 +93,7 @@ def _trim(s):
 # Local server support
 
 class TestServer(nntpbits.NewsServer):
-    """inntest.util.TestServer() -> SERVER
+    """inntest.TestServer() -> SERVER
 
     News server class that accepts all articles fed to it.
     """
@@ -123,10 +123,10 @@ class TestServer(nntpbits.NewsServer):
             self.ihave_submitted[ident]=article
         return (235, b'OK')
 
-def _local_server():
-    """inntest.utils._local_server() -> SERVER
+def local_server():
+    """inntest.local_server() -> SERVER
 
-    Create an inntest.utils.TestServer and bind it to the local server
+    Create an inntest.TestServer and bind it to the local server
     address.  This is used by propagation tests.
 
     """

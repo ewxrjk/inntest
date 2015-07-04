@@ -111,7 +111,7 @@ overview -- apply overview-specific transformations
                 value=re.sub(b'\n', b'', value)
                 value=re.sub(b'\t', b' ', value)
             logging.debug("%s: %s <-> %s" % (field, value, r_value))
-            if inntest.utils._trim(r_value) != inntest.utils._trim(value):
+            if inntest.trim(r_value) != inntest.trim(value):
                 raise Exception("%s: non-matching %s header: '%s' vs '%s'"
                                 % (cmd, field, value, r_value))
     # Body should match
@@ -164,81 +164,81 @@ def _post_articles(conn):
 
     """
     articles=[]
-    ident=inntest.utils._ident()
+    ident=inntest.ident()
     article=[b'Newsgroups: ' + inntest.group,
              b'From: ' + inntest.email,
              b'Subject: [nntpbits] articles-simple (ignore)',
              b'Message-ID: ' + ident,
              b'',
-             inntest.utils._unique()]
+             inntest.unique()]
     conn.post(article)
     articles.append([ident, article])
 
-    ident=inntest.utils._ident()
+    ident=inntest.ident()
     article=[b'Newsgroups: ' + inntest.group,
              b'From: ' + inntest.email,
              b'Subject: [nntpbits] articles-keywords (ignore)',
              b'Message-ID: ' + ident,
              b'Keywords: this, that, the other',
              b'',
-             inntest.utils._unique()]
+             inntest.unique()]
     conn.post(article)
     articles.append([ident, article])
 
-    ident=inntest.utils._ident()
+    ident=inntest.ident()
     article=[b'Newsgroups: ' + inntest.group,
              b'From: ' + inntest.email,
              b'Subject: [nntpbits] articles-date (ignore)',
              b'Message-ID: ' + ident,
-             b'Date: ' + inntest.utils._date(),
+             b'Date: ' + inntest.newsdate(),
              b'',
-             inntest.utils._unique()]
+             inntest.unique()]
     conn.post(article)
     articles.append([ident, article])
 
-    ident=inntest.utils._ident()
+    ident=inntest.ident()
     article=[b'Newsgroups: ' + inntest.group,
              b'From: ' + inntest.email,
              b'Subject: [nntpbits] articles-organization (ignore)',
              b'Message-ID: ' + ident,
-             b'Organization: ' + inntest.utils._unique(),
+             b'Organization: ' + inntest.unique(),
              b'',
-             inntest.utils._unique()]
+             inntest.unique()]
     conn.post(article)
     articles.append([ident, article])
 
-    ident=inntest.utils._ident()
+    ident=inntest.ident()
     article=[b'Newsgroups: ' + inntest.group,
              b'From: ' + inntest.email,
              b'Subject: [nntpbits] articles-user-agent (ignore)',
              b'Message-ID: ' + ident,
              b'User-Agent: test.terraraq.uk',
              b'',
-             inntest.utils._unique()]
+             inntest.unique()]
     conn.post(article)
     articles.append([ident, article])
 
-    ident=inntest.utils._ident()
+    ident=inntest.ident()
     article=[b'Newsgroups: ' + inntest.group,
              b'From: ' + inntest.email + b'   ',
              b'Subject: [nntpbits] articles-trailing-space (ignore)\t',
              b'Message-ID: ' + ident,
              b'',
-             inntest.utils._unique()]
+             inntest.unique()]
     conn.post(article)
     articles.append([ident, article])
 
-    ident=inntest.utils._ident()
+    ident=inntest.ident()
     article=[b'Newsgroups: ' + inntest.group,
              b'From: \t' + inntest.email,
              b'Subject: [nntpbits] articles-leading-space (ignore)',
              b'Message-ID:     ' + ident,
              b'',
-             inntest.utils._unique()]
+             inntest.unique()]
     conn.post(article)
     articles.append([ident, article])
 
-    ident=inntest.utils._ident()
+    ident=inntest.ident()
     article=[b'Newsgroups: ' + inntest.group,
              b'From: inntest',
              b' <' + inntest.email + b'>',
@@ -246,19 +246,19 @@ def _post_articles(conn):
              b' (folded)',
              b'Message-ID: ' + ident,
              b'',
-             inntest.utils._unique()]
+             inntest.unique()]
     conn.post(article)
     articles.append([ident, article])
 
     # Lots of junk headers to blow HEADER_DELTA limit in nnrpd/post.c
-    ident=inntest.utils._ident()
+    ident=inntest.ident()
     article=([b'Newsgroups: ' + inntest.group,
               b'From: \t' + inntest.email,
               b'Subject: [nntpbits] articles-madeup-headers (ignore)',
               b'Message-ID: ' + ident]
              +[b'Nonsense: whatever']*40+
              [b'',
-              inntest.utils._unique()])
+              inntest.unique()])
     conn.post(article)
     articles.append([ident, article])
 

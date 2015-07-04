@@ -30,7 +30,7 @@ def test_post(ident=None, description=b"posting test"):
     line.
 
     """
-    ident=inntest.utils._ident(ident)
+    ident=inntest.ident(ident)
     article=[b'Newsgroups: ' + inntest.group,
              b'From: ' + inntest.email,
              b'Subject: [nntpbits] ' + nntpbits._normalize(description) + b' (ignore)',
@@ -92,8 +92,8 @@ def _check_post_propagates(ident, description,
     a message and then verify it is fed back to us.
 
     """
-    ident=inntest.utils._ident(ident)
-    with inntest.utils._local_server() as s:
+    ident=inntest.ident(ident)
+    with inntest.local_server() as s:
         do_post(*args, ident=ident, description=description, **kwargs)
         next_trigger=0
         limit=time.time()+inntest.timelimit
@@ -121,7 +121,7 @@ def test_post_no_message_id():
     verifies that the article appears.
 
     """
-    unique=inntest.utils._unique()
+    unique=inntest.unique()
     article=[b'Newsgroups: ' + inntest.group,
              b'From: ' + inntest.email,
              b'Subject: [nntpbits] no message id (ignore)',
@@ -154,7 +154,7 @@ def test_ihave(ident=None, description=b"ihave test", _pathhost=None):
     line.
 
     """
-    ident=inntest.utils._ident(ident)
+    ident=inntest.ident(ident)
     if _pathhost is None:
         _pathhost=inntest.domain
     article=[b'Path: ' + _pathhost + b'!not-for-mail',
@@ -162,7 +162,7 @@ def test_ihave(ident=None, description=b"ihave test", _pathhost=None):
              b'From: ' + inntest.email,
              b'Subject: [nntpbits] ' + nntpbits._normalize(description) + b' (ignore)',
              b'Message-ID: ' + ident,
-             b'Date: ' + inntest.utils._date(),
+             b'Date: ' + inntest.newsdate(),
              b'',
              b'nntpbits.Test test posting']
     with inntest.connection() as conn:

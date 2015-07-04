@@ -31,18 +31,18 @@ def test_errors_no_article():
     with inntest.connection() as conn:
         conn._require_reader() # cheating
         for cmd in _article_commands:
-            code,arg=conn.transact([cmd, inntest.utils._ident()])
+            code,arg=conn.transact([cmd, inntest.ident()])
             if code != 430:
                 raise Exception("%s: incorrect error for nonexistent article: %s"
                                 % (cmd, conn.response))
         if (b'OVER' in conn.capabilities()
             and b'MSGID' in conn.capability_arguments(b'OVER')):
-            code,arg=conn.transact([b'OVER', inntest.utils._ident()])
+            code,arg=conn.transact([b'OVER', inntest.ident()])
             if code != 430:
                 raise Exception("OVER: incorrect error for nonexistent article: %s"
                                 % (cmd, conn.response))
         if b'HDR' in conn.capabilities():
-            code,arg=conn.transact([b'HDR', b'Subject', inntest.utils._ident()])
+            code,arg=conn.transact([b'HDR', b'Subject', inntest.ident()])
             if code != 430:
                 raise Exception("OVER: incorrect error for nonexistent article: %s"
                                 % (cmd, conn.response))
@@ -56,7 +56,7 @@ def test_errors_no_group():
     with inntest.connection() as conn:
         conn._require_reader() # cheating
         for cmd in [b'GROUP', b'LISTGROUP']:
-            code,arg=conn.transact([cmd, inntest.utils._groupname()])
+            code,arg=conn.transact([cmd, inntest.groupname()])
             if code != 411:
                 raise Exception("%s: incorrect error for nonexistent group: %s"
                                 % (cmd, conn.response))

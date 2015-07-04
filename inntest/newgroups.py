@@ -34,7 +34,7 @@ def test_newgroups(create="ctlinnd -s newgroup %s",
         start=conn.date()
         while start==conn.date():
             time.sleep(0.25)
-        group=inntest.utils._groupname()
+        group=inntest.groupname()
         cmd=create % str(group, 'ascii')
         logging.info("executing: %s" % cmd)
         rc=os.system(cmd)

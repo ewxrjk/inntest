@@ -57,3 +57,4 @@ EOF
 ${REALLY} sh -c "cat > $PREFIX/etc/users" <<EOF
 user:00xQPHYlVDIw6
 EOF
+echo configuration complete

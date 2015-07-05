@@ -49,3 +49,4 @@ if ${VALGRIND:-false}; then
     ${REALLY} $SELF/valgrindize --log $PREFIX/log $PREFIX/bin/inews
     ${REALLY} $SELF/valgrindize --log $PREFIX/log $PREFIX/bin/ctlinnd
 fi
+echo install complete

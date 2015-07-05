@@ -64,12 +64,10 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
             conn.send_lines(article)
             code,arg=conn.wait()
         if code!=error_response:
-            if expected_fail:
-                xfail("%s: wrong response for %s: %d"
-                      % (cmd, what, code))
-            else:
-                fail("%s: wrong response for %s: %d"
-                     % (cmd, what, code))
+            (xfail if expected_fail
+             else fail)("%s: %s: expected %d got %s"
+                        % (str(cmd, 'ascii'), what, error_response,
+                           str(conn.response, 'ascii')))
     ## Missing things
     check('no subject',
           [b'Newsgroups: ' + inntest.group,

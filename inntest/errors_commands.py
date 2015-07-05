@@ -186,9 +186,11 @@ def _test_errors_syntax(conn, cases):
         else:
             code,arg=conn.transact(cmd)
         if len(case) > 2 and code==case[2]:
-            xfail("%s: wrong response: %s"
-                  % (cmd, conn.response))
+            xfail("%s: expected %d got %s"
+                  % (str(cmd, 'ascii'), case[1],
+                     str(conn.response, 'ascii')))
         else:
             if code != response:
                 fail("%s: expected %d got %s"
-                     % (cmd,response,conn.response))
+                     % (str(cmd, 'ascii') ,response,
+                        str(conn.response,'ascii')))

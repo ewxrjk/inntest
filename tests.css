@@ -12,7 +12,7 @@ td.ok {
 }
 
 td.fails {
-  background-color: #ffe040
+  background-color: #ff6040
 }
 
 td.xfails, td.skips {

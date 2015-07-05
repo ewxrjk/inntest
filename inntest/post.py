@@ -106,7 +106,7 @@ def _check_post_propagates(ident, description,
             # Repeat the trigger if it's not helping
             if (inntest.trigger is not None
                    and next_trigger <= time.time()):
-                log().info("execute: %s" % inntest.trigger)
+                log().debug("execute: %s" % inntest.trigger)
                 rc=os.system(inntest.trigger)
                 if rc != 0:
                     failhard("Trigger wait status: %#04x" % rc)

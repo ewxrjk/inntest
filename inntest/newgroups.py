@@ -37,7 +37,7 @@ def test_newgroups(create="ctlinnd -s newgroup %s",
             time.sleep(0.25)
         group=inntest.groupname()
         cmd=create % str(group, 'ascii')
-        log().info("executing: %s" % cmd)
+        log().debug("executing: %s" % cmd)
         rc=os.system(cmd)
         if rc != 0:
             failhard("Create command failed (%d)" % rc)
@@ -85,7 +85,7 @@ def test_newgroups(create="ctlinnd -s newgroup %s",
                      % (count, low, high))
         finally:
             cmd=remove % str(group, 'ascii')
-            log().info("executing: %s" % cmd)
+            log().debug("executing: %s" % cmd)
             rc=os.system(cmd)
             if rc != 0:
                 failhard("Remove command failed (%d)" % rc)

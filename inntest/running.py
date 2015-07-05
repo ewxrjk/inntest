@@ -81,7 +81,7 @@ def fail(description):
     """inntest.running.fail(DESCRIPTION)
 
     Log a non-fatal failure."""
-    _log.warn("Test %s FAILURE: %s" % (_testname, description))
+    _log.warn("FAILURE: %s" % (description))
     _fails.append(description)
 
 def failhard(description):
@@ -91,7 +91,7 @@ def failhard(description):
     returning.
 
     """
-    _log.error("Test %s FAILURE: %s" % (_testname, description))
+    _log.error("FAILURE: %s" % (description))
     _fails.append(description)
     raise _Failed(description)
 
@@ -99,7 +99,7 @@ def xfail(description):
     """inntest.running.xfail(DESCRIPTION)
 
     Log a non-fatal expected failure."""
-    _log.warn("Test %s EXPECTED FAILURE: %s" % (_testname, description))
+    _log.warn("EXPECTED FAILURE: %s" % (description))
     _xfails.append(description)
 
 def xfailhard(description):
@@ -109,7 +109,7 @@ def xfailhard(description):
     returning.
 
     """
-    _log.error("Test %s EXPECTED FAILURE: %s" % (_testname, description))
+    _log.error("EXPECTED FAILURE: %s" % (description))
     _xfails.append(description)
     raise _Failed(description)
 
@@ -117,5 +117,5 @@ def skip(description):
     """inntest.running.skip(DESCRIPTION)
 
     Log a skipped test."""
-    _log.warn("Test %s SKIPPED: %s" % (_testname, description))
+    _log.warn("SKIPPED: %s" % (description))
     _skips.append(description)

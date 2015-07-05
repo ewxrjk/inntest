@@ -21,9 +21,10 @@
 set -e
 . ./config
 
-echo "=== $0 $1 ==="
-
+configuration="$1"
 shift
+
+echo "=== $0 $configuration ==="
 
 ./tests.py ${DEBUG} \
            -s "${SERVER}" -p "${PORT}" \
@@ -31,4 +32,5 @@ shift
            -T "./trigger" \
            -a test_newgroups:create="really ${PREFIX}/bin/ctlinnd -s newgroup %s" \
            -a test_newgroups:remove="really ${PREFIX}/bin/ctlinnd -s rmgroup %s" \
+           -H "$configuration.html"
            "$@"

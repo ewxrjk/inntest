@@ -124,8 +124,8 @@ class TestServer(nntpbits.NewsServer):
             self.ihave_submitted[ident]=article
         return (235, b'OK')
 
-def local_server():
-    """inntest.local_server() -> SERVER
+def local_server(features=[]):
+    """inntest.local_server([FEATURES]) -> SERVER
 
     Create an inntest.TestServer and bind it to the local server
     address.  This is used by propagation tests.
@@ -135,5 +135,6 @@ def local_server():
     ls.listen_address(inntest.localserveraddress[0],
                       inntest.localserveraddress[1],
                       wait=False,
-                      daemon=True)
+                      daemon=True,
+                      features=features)
     return ls

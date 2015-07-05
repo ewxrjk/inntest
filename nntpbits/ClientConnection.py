@@ -72,6 +72,7 @@ class ClientConnection(nntpbits.Connection):
         self.service=None
         self.posting=None
         self.reader=None
+        self.rfc4644=None
         self.capability_list=None
         self.capability_set=None
         self.overview_fmt=None
@@ -252,6 +253,7 @@ class ClientConnection(nntpbits.Connection):
         self.capability_list=None
         self.capability_set=None
         self.overview_fmt=None
+        self.rfc4644=None
 
     # -------------------------------------------------------------------------
     # QUIT (3977 5.4)
@@ -509,6 +511,11 @@ class ClientConnection(nntpbits.Connection):
         instead.
 
         """
+        ident=ClientConnection._ident(article, ident)
+        return self._post(article, b'IHAVE', ident, 335, 235)
+
+    @staticmethod
+    def _ident(article, ident=None):
         if ident is None:
             if isinstance(article, bytes):
                 article=article.splitlines()
@@ -523,7 +530,7 @@ class ClientConnection(nntpbits.Connection):
             ident=nntpbits._normalize(ident)
         if ident is None:
             raise Exception("failed to extract message ID from article")
-        return self._post(article, b'IHAVE', ident, 335, 235)
+        return ident
 
     def _post(self, article, command, ident, initial_response, ok_response):
         """n._post(ARTICLE, COMMAND, IDENT, INITIAL_RESPONSE, OK_RESPONSE) -> CODE
@@ -846,16 +853,68 @@ class ClientConnection(nntpbits.Connection):
     # -------------------------------------------------------------------------
     # MODE STREAM (4644 2.3)
 
-    #TODO
+    def streaming(self):
+        """n.streaming() -> BOOL
+
+        Return True if the RFC4644 streaming commands are available,
+        otherwise False."""
+        if self.rfc4644 is None:
+            if b'STREAMING' in self.capabilities():
+                self.rfc4644=True
+            else:
+                code,argument=self.transact(b'MODE STREAMING')
+                self.rfc4644=(code==203)
+        return self.rfc4644
 
     # -------------------------------------------------------------------------
     # CHECK (4644 2.4)
 
-    #TODO
+    def check(self, article=None, ident=None):
+        """n.check(article=ARTICLE, ident=IDENT) -> BOOL|None
+
+        Checks whether message ID IDENT is wanted.  If IDENT is None
+        then the message ID will be extracted from ARTICLE (which is
+        otherwise ignored.
+
+        Returns:
+        True -- IDENT is wanted
+        False -- IDENT is not wanted
+        None -- ask again later
+
+        """
+        ident=ClientConnection._ident(article, ident)
+        code,argument=self.transact([b'CHECK', ident])
+        if code==238:
+            return True
+        if code==438:
+            return False
+        if code==431:
+            return None
+        self._failed('CHECK')
 
     # -------------------------------------------------------------------------
     # TAKETHIS (4644 2.5)
 
-    #TODO
+    def takethis(self, article, ident=None):
+        """n.takethis(ARTICLE,[ident=IDENT]) -> BOOL
 
+        Feed ARTICLE to the peer.  If IDENT is None then the message
+        ID will be extracted from ARTICLE.
 
+        The return value is:
+        True -- message is wanted
+        False -- message is not wanted
+
+        Note that TAKETHIS has no sensible way to signal temporary
+        failure so this command may terminate the connection.
+
+        """
+        ident=ClientConnection._ident(article, ident)
+        self.send_line([b'TAKETHIS', ident])
+        self.send_lines(article)
+        code,argument=self.wait()
+        if code==239:
+            return True
+        if code==439:
+            return False
+        self._failed('TAKETHIS')

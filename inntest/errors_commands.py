@@ -114,6 +114,18 @@ _invalid_transit=[
     [b'IHAVE <junk@example.com', 501, 435],
     [b'IHAVE <junk@example.com> wombats', 501, 435],
 ]
+_invalid_streaming=[
+    [b'CHECK', 501, 438],
+    [b'CHECK junk', 501, 438],
+    [b'CHECK <junk', 501, 438],
+    [b'CHECK <junk@example.com', 501, 438],
+    [b'CHECK <junk@example.com> wombats', 501, 438],
+    [b'TAKETHIS', 501, 439],
+    [b'TAKETHIS junk', 501, 439],
+    [b'TAKETHIS <junk', 501, 439],
+    [b'TAKETHIS <junk@example.com', 501, 439],
+    [b'TAKETHIS <junk@example.com> wombats', 501, 439],
+]
 _invalid_common=[
     [b'MODE NONSENSE', 501],
     [b'QUIT SMOKING', 501],
@@ -151,11 +163,28 @@ def test_errors_syntax_transit():
     with inntest.connection() as conn:
         return _test_errors_syntax(conn, _invalid_common + _invalid_transit)
 
+def test_errors_syntax_streaming():
+    """inntest.Tests.test_errors_syntax_streaming()
+
+    Test for correct response to a variety of syntax errors in
+    streaming commands.
+
+    """
+    with inntest.connection() as conn:
+        if not conn.streaming():
+            return skip()
+        return _test_errors_syntax(conn, _invalid_streaming)
+
 def _test_errors_syntax(conn, cases):
     for case in cases:
         cmd=case[0]
         response=case[1]
-        code,arg=conn.transact(cmd)
+        if cmd[:8]==b'TAKETHIS': # ugly special case
+            conn.send_line(cmd)
+            conn.send_line(b'.')
+            code,arg=conn.wait()
+        else:
+            code,arg=conn.transact(cmd)
         if len(case) > 2 and code==case[2]:
             xfail("%s: wrong response: %s"
                   % (cmd, conn.response))

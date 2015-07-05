@@ -42,8 +42,8 @@ class NewsServer(object):
     # -------------------------------------------------------------------------
     # Listening
 
-    def listen_socket(self, s, daemon=True):
-        """ns.listen(SOCKET, [daemon=DAEMON])
+    def listen_socket(self, s, daemon=True, features=[]):
+        """ns.listen(SOCKET, [daemon=DAEMON], [features=FEATURES])
 
         If the argument is a socket then accepts connections on that
         socket and services them via server connections in subthreads.
@@ -64,7 +64,9 @@ class NewsServer(object):
                 try:
                     self.log.info("%x: connected %s"
                                   % (threading.get_ident(), a))
-                    self.conncls(self).socket(ns)
+                    conn=self.conncls(self)
+                    conn.enable(features)
+                    conn.socket(ns)
                     self.log.info("%x: disconnected %s"
                                   % (threading.get_ident(), a))
                 except nntpbits._Stop:
@@ -80,8 +82,9 @@ class NewsServer(object):
             t=threading.Thread(target=worker, args=[ns,a], daemon=daemon)
             nntpbits.start_thread(t)
 
-    def listen_address(self, address, port, wait=False, daemon=True):
-        """ns.listen(ADDRESS, PORT[, wait=WAIT][, daemon=DAEMON])
+    def listen_address(self, address, port, wait=False, daemon=True,
+                       features=[]):
+        """ns.listen(ADDRESS, PORT[, wait=WAIT][, daemon=DAEMON], [features=FEATURES])
 
         Resolves ADDRESS:PORT into a list of addresses and invokes
         ns.listen_socket in a subthread for each of them.
@@ -118,7 +121,7 @@ class NewsServer(object):
                 try:
                     self.log.info("%x: listener started %s"
                                  % (threading.get_ident(), sockaddr))
-                    self.listen_socket(s, daemon=daemon)
+                    self.listen_socket(s, daemon=daemon, features=features)
                     self.log.info("%x: listener returned"
                                  % (threading.get_ident()))
                 except nntpbits._Stop:
@@ -182,14 +185,16 @@ class NewsServer(object):
     def ihave_check(self, ident):
         """ns.ihave_check(IDENT) -> (RESPONSE, ARGUMENT)
 
-        Implementation of the first half of the IHAVE command.  IDENT
-        is a bytes object containing the message ID submitted by the
-        peer.
+        Implementation of the first half of the IHAVE command and the
+        CHECK command.  IDENT is a bytes object containing the message
+        ID submitted by the peer.
 
         The return value is an NNTP response and argument.  The
-        response should be 335 if the article is acceptable, 435 if
-        not, 436 to request a retry later or 480 if IHAVE is not
-        permitted.
+        response should be:
+        335 -- message ID wanted
+        435 -- message ID not wanted
+        436 -- retry later
+        480 -- IHAVE not permitted
 
         """
         return (480, "Peering not available")
@@ -197,13 +202,16 @@ class NewsServer(object):
     def ihave(self, ident, article):
         """ns.ihave(IDENT, ARTICLE) -> (RESPONSE, ARGUMENT)
 
-        Implementation of the second half of the IHAVE command.
+        Implementation of the second half of the IHAVE command and the
+        TAKETHIS command.
 
         IDENT is a bytes object containing the message ID submitted by
         the peer and ARTICLE is a list of bytes objects.  The return
         value is an NNTP response and argument.  The response should
-        be 235 on success, 436 to request a retry and 437 if the
-        article was rejected.
+        be:
+        235 -- success
+        436 -- retry later
+        437 -- article not wanted
 
         """
         return (480, "Peering not available")

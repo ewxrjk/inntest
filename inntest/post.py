@@ -83,10 +83,10 @@ def test_post_propagates(ident=None, description=b'posting propagation test'):
     If DESCRIPTION is specified then it will appear in the subject
     line.
     """
-    _check_post_propagates(ident, description, test_post)
+    _check_post_propagates(ident, description, test_post, features='peering')
 
 def _check_post_propagates(ident, description,
-                           do_post, *args, **kwargs):
+                           do_post, features=[], *args, **kwargs):
     """inntest.Tests._check_post_propagates(IDENT, DESCRIPTION, DO_POST, ...)
 
     Call do_post(ident=IDENT, description=DESCRIPTION, ..) to post
@@ -94,7 +94,9 @@ def _check_post_propagates(ident, description,
 
     """
     ident=inntest.ident(ident)
-    with inntest.local_server() as s:
+    if features is None:
+        features='peering'
+    with inntest.local_server(features=features) as s:
         do_post(*args, ident=ident, description=description, **kwargs)
         next_trigger=0
         limit=time.time()+inntest.timelimit
@@ -190,4 +192,67 @@ def test_ihave_propagates(ident=None, description=b'ihave propagation test'):
     # Need a nondefault pathhost so it will propagate back to us
     _check_post_propagates(ident, description,
                            test_ihave,
+                           features='ihave', # prevent use of streaming
+                           _pathhost=b'nonesuch.' + inntest.domain)
+
+# -----------------------------------------------------------------------------
+# Testing RFC4644 streaming commands
+
+def test_takethis(ident=None, description=b"takethis test", _pathhost=None):
+    """inntest.Tests.test_takethis([ident=IDENT][description=SUBJECT])
+
+    Feed a post to the test newsgroup using CHECK/TAKETHIS and
+    verifies that the article appears.
+
+    If IDENT is specified then this value will be used as the
+    message ID.
+
+    If DESCRIPTION is specified then it will appear in the subject
+    line.
+
+    """
+    ident=inntest.ident(ident)
+    if _pathhost is None:
+        _pathhost=inntest.domain
+    article=[b'Path: ' + _pathhost + b'!not-for-mail',
+             b'Newsgroups: ' + inntest.group,
+             b'From: ' + inntest.email,
+             b'Subject: [nntpbits] ' + nntpbits._normalize(description) + b' (ignore)',
+             b'Message-ID: ' + ident,
+             b'Date: ' + inntest.newsdate(),
+             b'',
+             b'nntpbits.Test test posting']
+    with inntest.connection() as conn:
+        if not conn.streaming():
+            return skip("no streaming support")
+        r=conn.check(article=article)
+        if r != True:
+            fail("CHECK rejected article: %s" % r)
+        r=conn.takethis(article)
+        if r != True:
+            failhard("TAKETHIS rejected article: %s" % r)
+        r=conn.check(article=article)
+        if r != False:
+            fail("CHECK unexpectedly accepted article: %s" % r)
+        r=conn.takethis(article)
+        if r != False:
+            fail("TAKETHIS unexpectedly accepted article: %s" % r)
+        _check_posted(conn, ident)
+
+def test_takethis_propagates(ident=None, description=b'takethis propagation test'):
+    """inntest.Tests.test_takethis_propagates([ident=IDENT][description=SUBJECT])
+
+    Feed a post to the test newsgroup and verifies that the article
+    propagates to the test server.
+
+    If IDENT is specified then this value will be used as the
+    message ID.
+
+    If DESCRIPTION is specified then it will appear in the subject
+    line.
+    """
+    # Need a nondefault pathhost so it will propagate back to us
+    _check_post_propagates(ident, description,
+                           test_takethis,
+                           features='peering',
                            _pathhost=b'nonesuch.' + inntest.domain)

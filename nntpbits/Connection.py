@@ -15,11 +15,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """Client/server connection base class"""
-import logging,re,select,socket
+import logging,re,select,socket,threading
 import nntpbits
 
 # Regexp parsing a response
 _parse_re=re.compile(b"^([0-9]{3}) (.*)$")
+
+_lock=threading.Lock()
+_next_key=0
 
 class Connection(object):
     """Base class for text-based network protocols
@@ -37,6 +40,10 @@ class Connection(object):
         self.sock=None
         self.stoppable=stoppable
         self.log=logging.getLogger(__name__)
+        with _lock:
+            global _next_key
+            self.key=_next_key
+            _next_key+=1
 
     def files(self, r, w):
         """p.files(r=READER, w=WRITER)
@@ -87,7 +94,7 @@ class Connection(object):
         """
         if isinstance(line, list):
             line=b' '.join(nntpbits._normalize(line))
-        self.log.debug("SEND %s" % line)
+        self.log.debug("%08x SEND %s" % (self.key, line))
         self.w.write(nntpbits._normalize(line))
         self.w.write(b'\r\n')
         if flush:
@@ -188,7 +195,7 @@ class Connection(object):
                 return None
             line += ch
         line=line[0:-len(self.eol)]
-        self.log.debug("RECV %s" % line)
+        self.log.debug("%08x RECV %s" % (self.key, line))
         return line
 
     def _complete(self, line):

@@ -28,6 +28,7 @@ _responses={
     101: 'Capabilities follow',
     200: 'Posting allowed',
     201: 'Posting prohibited',
+    203: 'Streaming allowed',
     205: 'Bye',
     215: 'Information follows',
     220: 'Article follows',
@@ -84,6 +85,11 @@ class ServerConnection(nntpbits.Connection):
     independent thread for each connection it receives, perhaps using
     the ServerConnection.listen() method.
 
+    By default no useful commands are enabled.  Use a selection of the
+    following methods to enable them:
+    enable_ihave() -- enable basic peering commands
+    enable_streaming() -- enable RFC4644 fast peering commands
+
     """
     def __init__(self, server, stoppable=True):
         nntpbits.Connection.__init__(self, stoppable=stoppable)
@@ -91,12 +97,60 @@ class ServerConnection(nntpbits.Connection):
         self.server=server
         self.commands={
             b'CAPABILITIES': self.capabilities,
-            b'IHAVE': self.ihave,
+            b'MODE': self.mode,
             b'QUIT': self.quit,
         }
         self.capabilities=[b"VERSION 2",
                            b"IMPLEMENTATION inntest"]
         self.log=logging.getLogger(__name__)
+
+    def enable_ihave(self, state=True):
+        """s.enable_ihave([STATE])
+
+        Enables (or disables if STATE=False) the IHAVE command.
+
+        """
+        if state==True:
+            self.commands[b'IHAVE']=self.ihave
+        else:
+            self.commands.pop(b'IHAVE')
+
+    def enable_streaming(self, state=True):
+        """s.enable_streaming([STATE])
+
+        Enables (or disables if STATE=False) the RFC4644 streaming
+        commands.
+
+        """
+        if state==True:
+            self.commands[b'CHECK']=self.check
+            self.commands[b'TAKETHIS']=self.takethis
+        else:
+            self.commands.pop(b'CHECK')
+            self.commands.pop(b'TAKETHIS')
+
+    def enable(self, feature, state=True):
+        """s.enable(FEATURE[, STATE])
+
+        Enables (or disables if STATE=False) a named feature, or a list
+        of features.  Valid features are:
+        ihave -- just the IHAVE command
+        streaming -- RFC4644 streaming commands
+        peering -- all peering commands
+        """
+        if isinstance(feature, list):
+            for item in feature:
+                self.enable(item, state)
+        else:
+            if feature.lower()=='ihave':
+                self.enable_ihave(state)
+            elif feature.lower()=='streaming':
+                self.enable_streaming(state)
+            elif feature.lower()=='peering':
+                self.enable_ihave(state)
+                self.enable_streaming(state)
+            else:
+                raise Exception("unrecognized feature '%s'" % feature)
 
     def _reset(self):
         """s._reset()
@@ -141,7 +195,7 @@ class ServerConnection(nntpbits.Connection):
                 detail=""):
         """s.respond(RESPONSE, DESCRIPTION)
 
-        Send an error message to the peer.
+        Send a response message to the peer.
 
         """
         if log_type is None and response >= 500:
@@ -151,9 +205,12 @@ class ServerConnection(nntpbits.Connection):
                 description=_responses[response]
             else:
                 description="Derp"
+        if isinstance(description, bytes):
+            description=str(description, 'ascii')
         if log_type is not None:
             method=getattr(self.log, log_type)
-            method("%x: %s %s" % (threading.get_ident(), description, detail))
+            method("%x: %s %s"
+                   % (threading.get_ident(), description, detail))
         self.send_line("%d %s" % (response, description), flush=flush)
 
     def command(self, cmd):
@@ -179,7 +236,9 @@ class ServerConnection(nntpbits.Connection):
     def ihave(self, arguments):
         """s.ihave(ARGUMENTS)
 
-        Implementation of the NNTP IHAVE command."""
+        Implementation of the NNTP IHAVE command.
+
+        """
         if not _message_id_re.match(arguments):
             return self.respond(501)
         (rc,argument)=self.server.ihave_check(arguments)
@@ -188,6 +247,60 @@ class ServerConnection(nntpbits.Connection):
             article=self.receive_lines()
             (rc,argument)=self.server.ihave(arguments, article)
             self.respond(rc, argument)
+
+    def check(self, arguments):
+        """s.check(ARGUMENTS)
+
+        Implementation of the NNTP CHECK command.
+
+        """
+        if not _message_id_re.match(arguments):
+            return self.respond(501)
+        (rc,argument)=self.server.ihave_check(arguments)
+        if rc==335:
+            return self.respond(238, arguments)
+        elif rc==435:
+            return self.respond(431, arguments)
+        elif rc==436:
+            return self.respond(438, arguments)
+        return self.respond(rc, argument)
+
+    def takethis(self, arguments):
+        """s.takethis(ARGUMENTS)
+
+        Implementation of the NNTP TAKETHIS command.
+
+        """
+        if not _message_id_re.match(arguments):
+            return self.respond(501)
+        article=self.receive_lines()
+        (rc,argument)=self.server.ihave_check(arguments)
+        if rc==335:
+            (rc,argument)=self.server.ihave(arguments, article)
+            if rc==235:
+                return self.respond(239, arguments)
+            if rc==437:
+                return self.respond(439, arguments)
+        elif rc==435:
+            return self.respond(439, arguments)
+        if rc==436:
+            self.respond(400)
+            self.finished=True
+        return self.respond(rc, argument)
+
+    _mode_re=re.compile(b'^\\s*(\\S*)\s*$')
+
+    def mode(self, arguments):
+        """s.mode(ARGUMENTS)
+
+        Implementation of NNTP MODE command."""
+        m=ServerConnection._mode_re.match(arguments)
+        if not m:
+            return self.respond(501)
+        mode=m.group(1).upper()
+        if mode==b'STREAM' and b'TAKETHIS' in self.commands:
+            return self.respond(203)
+        return self.respond(501, 'Unrecognized/unsupported mode')
 
     def capabilities(self, arguments):
         """s.capabilities(ARGUMENTS)
@@ -199,6 +312,8 @@ class ServerConnection(nntpbits.Connection):
         for cmd in [b'IHAVE', b'POST', b'NEWNEWS', b'OVER', b'HDR', b'LIST']:
             if cmd in self.commands:
                 capabilities.append(cmd)
+        if [b'TAKETHIS'] in self.commands:
+            capabilities.append(b'STREAMING')
         self.respond(110, flush=False)
         self.send_lines(self.server.capabilities(capabilities))
 

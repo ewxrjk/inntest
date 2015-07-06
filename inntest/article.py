@@ -263,4 +263,14 @@ def _post_articles(conn):
     conn.post(article)
     articles.append([ident, article])
 
+    ident=inntest.ident()
+    article=([b'Newsgroups: ' + inntest.group+b', '+inntest.group,
+              b'From: \t' + inntest.email,
+              b'Subject: [nntpbits] duplicate crosspost (ignore)',
+              b'Message-ID: ' + ident,
+              b'',
+              inntest.unique()])
+    conn.post(article)
+    articles.append([ident, article])
+
     return articles

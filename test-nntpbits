@@ -32,5 +32,5 @@ echo "=== $0 $configuration ==="
            -T "./trigger" \
            -a test_newgroups:create="really ${PREFIX}/bin/ctlinnd -s newgroup %s" \
            -a test_newgroups:remove="really ${PREFIX}/bin/ctlinnd -s rmgroup %s" \
-           -H "$configuration.html"
+           -H "$configuration.html" \
            "$@"

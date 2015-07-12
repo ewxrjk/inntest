@@ -19,6 +19,7 @@ import logging,traceback
 
 _fails=[]
 _xfails=[]
+_compats=[]
 _skips=[]
 _testname=None
 
@@ -51,14 +52,15 @@ def list_tests():
     return tests
 
 def run_test(test_name, *args, **kwargs):
-    """inntest.run_test(NAME, ...) -> FAILS, XFAILS, SKIPS
+    """inntest.run_test(NAME, ...) -> FAILS, XFAILS, COMPATS, SKIPS
 
     Run the test NAME.
 
     """
-    global _fails, _xfails, _skips, _testname
+    global _fails, _xfails, _compats, _skips, _testname
     _fails=[]
     _xfails=[]
+    _compats=[]
     _skips=[]
     _testname=test_name
     if _log is None:
@@ -75,12 +77,15 @@ def run_test(test_name, *args, **kwargs):
         _log.error("Test %s failed: %s" % (test_name, e))
         _log.error("%s" % traceback.format_exc())
         _fails.append(e)
-    return (_fails, _xfails, _skips)
+    return (_fails, _xfails, _compats, _skips)
 
 def fail(description):
     """inntest.running.fail(DESCRIPTION)
 
-    Log a non-fatal failure."""
+    Log a non-fatal failure.
+
+    A failure means an unexpected difference from the specification.
+    """
     _log.warn("FAILURE: %s" % (description))
     _fails.append(description)
 
@@ -90,6 +95,10 @@ def failhard(description):
     Log a fatal failure.  Raises an exception rather than
     returning.
 
+    A failure means an unexpected difference from the specification.
+    failhard() is only used instead of fail() when the test cannot proceed
+    further.
+
     """
     _log.error("FAILURE: %s" % (description))
     _fails.append(description)
@@ -98,7 +107,11 @@ def failhard(description):
 def xfail(description):
     """inntest.running.xfail(DESCRIPTION)
 
-    Log a non-fatal expected failure."""
+    Log a non-fatal expected failure.
+
+    An expected failure means a known difference but unjustified
+    different from the specification.
+    """
     _log.warn("EXPECTED FAILURE: %s" % (description))
     _xfails.append(description)
 
@@ -108,10 +121,30 @@ def xfailhard(description):
     Log a fatal expected failure.  Raises an exception rather than
     returning.
 
+    An expected failure means a known difference but unjustified different from
+    the specification.  xfailhard() is only used instead of xfail() when the
+    test cannot proceed further.
+
     """
     _log.error("EXPECTED FAILURE: %s" % (description))
     _xfails.append(description)
     raise _Failed(description)
+
+def compat(description):
+    """inntest.running.compat(DESCRIPTION)
+
+    Log a compatibility variation from the specification.
+
+    A compatibility variation means a known difference from the specification
+    for which a justification is given.  The justification might be that the
+    specification is wrong, or compatibility with some other system that does
+    not meet the specification.  (The justification need not be correct - for
+    instance compatibility with a system that is no longer used, or with a
+    completely hypothetical system is sufficient.)
+
+    """
+    _log.error("COMPATIBILITY: %s" % (description))
+    _compats.append(description)
 
 def skip(description):
     """inntest.running.skip(DESCRIPTION)

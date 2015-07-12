@@ -93,6 +93,7 @@ def main(argv):
     partial_success=0
     skips=[]
     fails=[]
+    compats=[]
     xfails=[]
     capture=CaptureHandler(level=r.debug)
     if r.HTML:
@@ -105,12 +106,13 @@ def main(argv):
         html.write("<tr><td>test</td>\n")
         html.write("<td>outcome</td>\n")
         html.write("<td>xfail</td>\n")
+        html.write("<td>compat</td>\n")
         html.write("<td>skip</td>\n")
         html.write("<td>log</td>\n")
     for test_name in r.TEST:
         tested+=1
         capture.clear()
-        t_fails,t_xfails,t_skips=inntest.run_test(test_name, **args[test_name])
+        t_fails,t_xfails,t_compats,t_skips=inntest.run_test(test_name, **args[test_name])
         if r.HTML:
             html.write("<tr><td class=testname>%s</td>\n" % test_name)
             if len(t_fails):
@@ -121,6 +123,10 @@ def main(argv):
                 html.write("<td class=xfails>%d</td>\n" % len(t_xfails))
             else:
                 html.write("<td class=noxfails>&nbsp;</td>\n")
+            if len(t_compats):
+                html.write("<td class=compats>%d</td>\n" % len(t_compats))
+            else:
+                html.write("<td class=nocompats>&nbsp;</td>\n")
             if len(t_skips):
                 html.write("<td class=skips>%d</td>\n" % len(t_skips))
             else:
@@ -135,6 +141,7 @@ def main(argv):
             html.write("</tr>\n")
         fails.extend(t_fails)
         xfails.extend(t_xfails)
+        compats.extend(t_compats)
         skips.extend(t_skips)
         if len(t_fails) + len(t_xfails) + len(t_skips) == 0:
             total_success+=1
@@ -146,6 +153,8 @@ def main(argv):
         logging.warn("%d skips" % len(skips))
     if len(xfails) > 0:
         logging.warn("%d expected fails" % len(xfails))
+    if len(compats) > 0:
+        logging.info("%d compatibility variations" % len(compats))
     if len(fails) > 0:
         logging.error("%d fails" % len(fails))
     if r.HTML:

@@ -48,7 +48,7 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
     """
     def check(what, article, ident=None,
               error_response=error_response, add_body=True,
-              expected_fail=False, extras=extras):
+              expected_fail=False, compatibility=False, extras=extras):
         if ident is None:
             ident=inntest.ident()
             article=[b'Message-ID: '+ident]+article
@@ -64,10 +64,14 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
             conn.send_lines(article)
             code,arg=conn.wait()
         if code!=error_response:
-            (xfail if expected_fail
-             else fail)("%s: %s: expected %d got %s"
-                        % (str(cmd, 'ascii'), what, error_response,
-                           str(conn.response, 'ascii')))
+            reporter=fail
+            if compatibility and code==ok_response:
+                reporter=compat
+            if expected_fail:
+                reporter=xfail
+            reporter("%s: %s: expected %d got %s"
+                     % (str(cmd, 'ascii'), what, error_response,
+                        str(conn.response, 'ascii')))
     ## Missing things
     check('no subject',
           [b'Newsgroups: ' + inntest.group,
@@ -104,30 +108,41 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
            b'From: ' + inntest.email,
            b'Subject: [nntpbits] empty groups test (ignore)',
            b'Date: ' + inntest.newsdate()])
+    # INN's nnrpd accepts empty headers in POSTed articles and removes them.
+    # This violates the combination of RFC5536 s2.2 and RFC5537 s3.5 (item 2).
+    # However, INN's behavior is long-standing and is done for compatibility
+    # with clients that expect this behavior (tin).  Essentially, the
+    # specification is wrong.
     check('empty followup-to',
           [b'Newsgroups: ' + inntest.group,
            b'From: ' + inntest.email,
            b'Subject: [nntpbits] empty followup test (ignore)',
            b'Followup-To:',
            b'Date: ' + inntest.newsdate()],
-          expected_fail=(cmd==b'POST'))
+          compatibility=(cmd==b'POST'))
     check('empty from',
           [b'Newsgroups: ' + inntest.group,
            b'From: ',
            b'Subject: [nntpbits] empty from test (ignore)',
            b'Date: ' + inntest.newsdate()])
+    # INN's IHAVE accepts malformed articles in the interests of not having
+    # articles 'drop out'.
     check('malformed from',
           [b'Newsgroups: ' + inntest.group,
            b'From: example',
            b'Subject: [nntpbits] malformed from test (ignore)',
            b'Date: ' + inntest.newsdate()],
-          expected_fail=(cmd==b'IHAVE'))
+          compatibility=(cmd==b'IHAVE'))
+    # INN's nnrpd doens't full check the From: syntax.  This has been reported
+    # and may be fixed in a future version, at which point the test is likely
+    # to be tightened up.
     check('malformed from #2',
           [b'Newsgroups: ' + inntest.group,
            b'From: @example.com',
            b'Subject: [nntpbits] malformed from test #2 (ignore)',
            b'Date: ' + inntest.newsdate()],
-          expected_fail=True)
+          expected_fail=(cmd==b'POST'),
+          compatibility=(cmd==b'IHAVE'))
     check('forbidden newsgroup',
           [b'Newsgroups: poster',
            b'From: ' + inntest.email,
@@ -150,7 +165,7 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
            b'Subject: [nntpbits] malformed expires date test (ignore)',
            b'Date: ' + inntest.newsdate(),
            b'Expires: your sister'],
-          expected_fail=(cmd==b'IHAVE'))
+          compatibility=(cmd==b'IHAVE'))
     for ident in [b'junk', b'<junk>', b'<junk@junk']:
         check('malformed message-id (%s)' % ident,
               [b'Newsgroups: '+inntest.group,
@@ -175,7 +190,7 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
            b'Date: ' + inntest.newsdate(),
            b''],
           add_body=False,
-          expected_fail=(cmd==b'IHAVE'))
+          compatibility=(cmd==b'IHAVE'))
     ## Duplicate things
     check('duplicate header',
           [b'Newsgroups: ' + inntest.group,

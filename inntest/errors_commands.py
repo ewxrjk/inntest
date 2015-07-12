@@ -185,10 +185,14 @@ def _test_errors_syntax(conn, cases):
             code,arg=conn.wait()
         else:
             code,arg=conn.transact(cmd)
+        # INN violates RFC3977 and sends 435/438/439 for malformed message IDs.
+        # Reportedly this is for compatibility with other systems but I don't
+        # know what systems might actually send malformed messages IDs and
+        # react badly to a 501 response.
         if len(case) > 2 and code==case[2]:
-            xfail("%s: expected %d got %s"
-                  % (str(cmd, 'ascii'), case[1],
-                     str(conn.response, 'ascii')))
+            compat("%s: expected %d got %s"
+                   % (str(cmd, 'ascii'), case[1],
+                      str(conn.response, 'ascii')))
         else:
             if code != response:
                 fail("%s: expected %d got %s"

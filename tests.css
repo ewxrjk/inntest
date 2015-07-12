@@ -15,6 +15,6 @@ td.fails {
   background-color: #ff6040
 }
 
-td.xfails, td.skips {
+td.xfails, td.skips, td.compats {
   background-color: #ffe040
 }

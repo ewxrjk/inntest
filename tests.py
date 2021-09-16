@@ -15,30 +15,39 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import argparse,logging,re,sys,traceback
-import nntpbits,inntest
+import argparse
+import logging
+import re
+import sys
+import traceback
+import nntpbits
+import inntest
+
 
 class CaptureHandler(logging.Handler):
     def __init__(self, level):
         super().__init__(level)
-        self.records=[]
+        self.records = []
 
     def emit(self, record):
         self.records.append(record)
 
     def clear(self):
-        self.records=[]
+        self.records = []
+
 
 def escape(s):
     return re.sub('[&<>\"\']', (lambda m: "&#%d;" % int(ord(m.group(0)))), s)
 
+
 def main(argv):
-    p=argparse.ArgumentParser()
+    p = argparse.ArgumentParser()
     p.add_argument('-s', '--server', help='Subject news server name',
                    default='news')
     p.add_argument('-p', '--port', help='Subject news server port',
                    type=int, default=119)
-    p.add_argument('-T', '--trigger', help='Subject news server trigger command')
+    p.add_argument('-T', '--trigger',
+                   help='Subject news server trigger command')
     p.add_argument('-g', '--group', help='Test newsgroup name')
     p.add_argument('-e', '--email', help='Test email address')
     p.add_argument('-D', '--domain', help='Message-ID domain')
@@ -54,51 +63,51 @@ def main(argv):
                    action='store_true')
     p.add_argument('-H', '--html', help='HTML output',
                    type=str, dest='HTML', default=None)
-    r=p.parse_args(argv)
+    r = p.parse_args(argv)
     logging.basicConfig(level=r.debug)
-    all_tests=inntest.list_tests()
+    all_tests = inntest.list_tests()
     if r.list:
         for test_name in all_tests:
             print(test_name)
         return
     if len(r.TEST) == 0:
-        r.TEST=all_tests
+        r.TEST = all_tests
     else:
         for test in r.TEST:
             if test not in all_tests:
                 logging.error("No such test as %s" % test)
                 sys.exit(1)
-    args=dict([test,{}] for test in all_tests)
+    args = dict([test, {}] for test in all_tests)
     for a in r.ARGS:
-        m=re.match('^([^:]+):([^=]+)=(.*)$', a)
-        test=m.group(1)
+        m = re.match('^([^:]+):([^=]+)=(.*)$', a)
+        test = m.group(1)
         if test not in r.TEST:
             if test not in all_tests:
                 logging.error("No such test as %s" % test)
                 sys.exit(1)
             else:
-                logging.warn("Test %s will not be run" % test)
-        arg=m.group(2)
-        value=m.group(3)
-        args[test][arg]=value
-    inntest.configure(address=(r.server,r.port),
+                logging.warning("Test %s will not be run" % test)
+        arg = m.group(2)
+        value = m.group(3)
+        args[test][arg] = value
+    inntest.configure(address=(r.server, r.port),
                       group=r.group,
                       email=r.email,
                       domain=r.domain,
                       localserveraddress=('*', r.localport),
                       timelimit=r.timelimit,
                       trigger=r.trigger)
-    tested=0
-    total_success=0
-    partial_success=0
-    skips=[]
-    fails=[]
-    compats=[]
-    xfails=[]
-    capture=CaptureHandler(level=r.debug)
+    tested = 0
+    total_success = 0
+    partial_success = 0
+    skips = []
+    fails = []
+    compats = []
+    xfails = []
+    capture = CaptureHandler(level=r.debug)
     if r.HTML:
         logging.getLogger().addHandler(capture)
-        html=open(r.HTML, "w")
+        html = open(r.HTML, "w")
         html.write("<head>\n")
         html.write('<link rel=stylesheet type="text/css" href="tests.css">\n')
         html.write("<body>\n")
@@ -110,9 +119,10 @@ def main(argv):
         html.write("<td>skip</td>\n")
         html.write("<td>log</td>\n")
     for test_name in r.TEST:
-        tested+=1
+        tested += 1
         capture.clear()
-        t_fails,t_xfails,t_compats,t_skips=inntest.run_test(test_name, **args[test_name])
+        t_fails, t_xfails, t_compats, t_skips = inntest.run_test(
+            test_name, **args[test_name])
         if r.HTML:
             html.write("<tr><td class=testname>%s</td>\n" % test_name)
             if len(t_fails):
@@ -144,15 +154,15 @@ def main(argv):
         compats.extend(t_compats)
         skips.extend(t_skips)
         if len(t_fails) + len(t_xfails) + len(t_skips) == 0:
-            total_success+=1
+            total_success += 1
         elif len(fails) == 0:
-            partial_success+=1
+            partial_success += 1
     logging.info("%d test cases, %d total success, %d partial success"
                  % (tested, total_success, partial_success))
     if len(skips) > 0:
-        logging.warn("%d skips" % len(skips))
+        logging.warning("%d skips" % len(skips))
     if len(xfails) > 0:
-        logging.warn("%d expected fails" % len(xfails))
+        logging.warning("%d expected fails" % len(xfails))
     if len(compats) > 0:
         logging.info("%d compatibility variations" % len(compats))
     if len(fails) > 0:
@@ -161,6 +171,7 @@ def main(argv):
         html.write("</table>\n")
         html.close()
     return 1 if len(fails) > 0 else 0
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

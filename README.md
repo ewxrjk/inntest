@@ -2,7 +2,7 @@
 
 This is a test system for
 [INN](http://www.eyrie.org/~eagle/software/inn/).  It’s not very
-complete yet.  It requires Python 3.4.
+complete yet.  It requires Python 3.
 
 ## Basics
 
@@ -10,6 +10,8 @@ complete yet.  It requires Python 3.4.
 2. Create `tnews` user and group.  (You can select a different name in
    config.)
 3. Run `test-all` to build, install and test INN.
+
+See below for how to run it under Docker, if you prefer.
 
 If anything goes wrong and you can’t see why, consult `*.log` files.
 
@@ -108,6 +110,8 @@ Run the tests:
 ```
 ./test-docker ../inn/inn.tar.gz
 ```
+
+(You need IPv6 because otherwise INN's `innbind` tests will fail.)
 
 ## Copyright
 

@@ -1,12 +1,10 @@
-INN Test Utilities
-==================
+# INN Test Utilities
 
 This is a test system for
 [INN](http://www.eyrie.org/~eagle/software/inn/).  It’s not very
 complete yet.  It requires Python 3.4.
 
-Basics
-------
+## Basics
 
 1. Edit `config` to meet your local settings.
 2. Create `tnews` user and group.  (You can select a different name in
@@ -15,8 +13,7 @@ Basics
 
 If anything goes wrong and you can’t see why, consult `*.log` files.
 
-Individual Configurations
--------------------------
+## Individual Configurations
 
 A more fine-grained approach is to run `build` to build INN and then
 run individual test scripts to install and test with particular
@@ -27,8 +24,7 @@ The test configurations are:
 1. `test-innfeed` - default test configuration
 2. `test-nntpsend` - test with nntpsend and buffindexed overview
 
-Manual Control
---------------
+## Manual Control
 
 You can start and stop the server in its current configuration, and
 run tests by hand:
@@ -38,15 +34,13 @@ run tests by hand:
     # ... edit, repeat ...
     ./shutdown
 
-Using valgrind
---------------
+## Using valgrind
 
 Either set `VALGRIND=true` in `config`, or pass it in as environment variable:
 
     VALGRIND=true ./test-innfeed
 
-Coverage
---------
+## Coverage
 
 You can enable code coverage recording, with a suitable compiler.
 Example:
@@ -67,8 +61,7 @@ user the news server runs as.
 I use [Viewgcov](https://github.com/ewxrjk/viewgcov) to inspect the
 results.  Start it in the build directory and select File→Refresh.
 
-Sanitizers
-----------
+## Sanitizers
 
 You can enable sanitizers, if you have a suitable compiler.  Examples:
 
@@ -82,8 +75,7 @@ to debug any issues directly rather than via inntest.
 
 Look in `$PREFIX/log/errlog` for error log output from innd.
 
-nntpbits Framework
-------------------
+## nntpbits Framework
 
 The tests are actually run by `tests.py`, which in turn uses
 `nntpbits/Tests.py` to do the work.  This is part of a general NNTP
@@ -91,12 +83,37 @@ support framework; see the other files inside `nntpbits` for details,
 or experiment with the utilities `post.py`, `getgroup.py` and
 `server.py` which all use it.
 
-Copyright
----------
+## Containers
+
+Testing can be run in a Docker container.
+
+First you must enable IPv6 in Docker. https://docs.docker.com/config/daemon/ipv6/ describes
+how to achieve this. Add the following to `/etc/docker/daemon.json` and restart Docker.
+
+```
+{
+  "ipv6": true,
+  "fixed-cidr-v6": "2001:db8:1::/64"
+}
+```
+
+Create a tar to test in an INN checkout:
+
+```
+git archive --prefix inn/ HEAD | gzip -9c > inn.tar.gz
+```
+
+Run the tests:
+
+```
+./test-docker ../inn/inn.tar.gz
+```
+
+## Copyright
 
 With the exception of the Python suppressions, this work is:
 
-Copyright 2015 Richard Kettlewell
+Copyright Richard Kettlewell
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

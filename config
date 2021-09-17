@@ -1,30 +1,30 @@
 # Install prefix for INN
-PREFIX=/usr/local/news
+PREFIX=${PREFIX:-/usr/local/news}
 
 # Directory where INN source can be found
 DIR=${DIR:-../inn-build}
 
 # Command to elevate privilege
-REALLY=really
+REALLY=${REALLY:-really}
 
 # Test username (also used as group name)
-USER=tnews
+USER=${USER:-tnews}
 
 # Group to use for testing
-GROUP=local.test
+GROUP=${GROUP:-local.test}
 
 # Name/port of subject server
-SERVER=localhost
-PORT=1119
+SERVER=${SERVER:-localhost}
+PORT=${PORT:-1119}
 
-# Pathhost of subect server
-PATHHOST=test.anjou.terraraq.org.uk
+# Pathhost of subject server
+PATHHOST=${PATHHOST:-test.anjou.terraraq.org.uk}
 
 # Pathhost for test server (and message-ID domain)
-DOMAIN=test.terraraq.uk
+DOMAIN=${DOMAIN:-test.terraraq.uk}
 
 # Port for test server
-LOCALPORT=1199
+LOCALPORT=${LOCALPORT:-1199}
 
 # Set to -d to enable nntpbits debug output
 DEBUG=${DEBUG:-}

@@ -37,19 +37,20 @@ from inntest.post import *
 
 from inntest.running import list_tests, run_test
 
-address=(None, 119)
-domain=b'test.terraraq.uk'
-email=b'invalid@invalid.invalid'
-group=b'local.test'
-hierarchy=None
-localserveraddress=('*',1119)
-timelimit=60
-trigger=None
-trigger_timeout=5
-nnrp_user=b'user'
-nnrp_password=b'password'
-nntp_user=None
-nntp_password=None
+address = (None, 119)
+domain = b'test.terraraq.uk'
+email = b'invalid@invalid.invalid'
+group = b'local.test'
+hierarchy = None
+localserveraddress = ('*', 1119)
+timelimit = 60
+trigger = None
+trigger_timeout = 5
+nnrp_user = b'user'
+nnrp_password = b'password'
+nntp_user = None
+nntp_password = None
+
 
 def configure(**kwargs):
     """inntest.configure(...)
@@ -72,38 +73,39 @@ def configure(**kwargs):
 
     """
 
-    global address,domain,email,group,hierarchy,localserveraddress
-    global timelimit,trigger,trigger_timeout
-    for name,value in kwargs.items():
+    global address, domain, email, group, hierarchy, localserveraddress
+    global timelimit, trigger, trigger_timeout
+    for name, value in kwargs.items():
         if value is None:
             continue
-        if name=='address':
-            address=value
-        elif name=='domain':
-            domain=nntpbits._normalize(value)
-        elif name=='email':
-            email=nntpbits._normalize(value)
-        elif name=='group':
-            group=nntpbits._normalize(value)
-        elif name=='hierarchy':
-            hierarchy=nntpbits._normalize(value)
-        elif name=='localserveraddress':
-            localserveraddress=value
-        elif name=='timelimit':
-            timelimit=int(value)
-        elif name=='trigger':
-            trigger=value
-        elif name=='trigger_timeout':
-            trigger_timeout=int(value)
-        elif name=='nnrp_user':
-            nnrp_user=nntpbits._normalize(value)
-        elif name=='nnrp_password':
-            nnrp_password=nntpbits._normalize(value)
+        if name == 'address':
+            address = value
+        elif name == 'domain':
+            domain = nntpbits._normalize(value)
+        elif name == 'email':
+            email = nntpbits._normalize(value)
+        elif name == 'group':
+            group = nntpbits._normalize(value)
+        elif name == 'hierarchy':
+            hierarchy = nntpbits._normalize(value)
+        elif name == 'localserveraddress':
+            localserveraddress = value
+        elif name == 'timelimit':
+            timelimit = int(value)
+        elif name == 'trigger':
+            trigger = value
+        elif name == 'trigger_timeout':
+            trigger_timeout = int(value)
+        elif name == 'nnrp_user':
+            nnrp_user = nntpbits._normalize(value)
+        elif name == 'nnrp_password':
+            nnrp_password = nntpbits._normalize(value)
         else:
             raise Exception("inntest.configure: unrecognized argument: %s"
                             % name)
     if hierarchy is None:
-        hierarchy=b'.'.join(group.split(b'.')[:-1])
+        hierarchy = b'.'.join(group.split(b'.')[:-1])
+
 
 def connection():
     """inntest.connection()

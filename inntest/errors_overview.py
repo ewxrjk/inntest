@@ -14,9 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import inntest,nntpbits
+import inntest
+import nntpbits
 from inntest.errors_group import _number_deltas
 from inntest.running import *
+
 
 def test_errors_group_overview():
     """inntest.Tests.test_errors_group_overview()
@@ -24,29 +26,36 @@ def test_errors_group_overview():
     Test range behavior for group overview commands.
 
     """
-    done=False
+    done = False
     with inntest.connection() as conn:
-        conn._require_reader() # cheating
-        count,low,high=conn.group(inntest.group)
+        conn._require_reader()  # cheating
+        count, low, high = conn.group(inntest.group)
+        # INN fails these tests for delta >= 2^32; it parses the
+        # range into a 64-bit value but then stuffs it into an int
+        # uncritically.
+        #
+        # RFC3977 s8 says article numbers MUST be in the range
+        # 1-2147483647 so we are testing quality of implementation
+        # rather than compliance here.
         if b'OVER' in conn.capabilities():
-            done=True
+            done = True
             for delta in _number_deltas:
-                overviews=conn.over(low+delta, high+delta)
-                if len(overviews)!=0:
-                    fail("OVER: unexpected overview data: delta=%d"
+                overviews = conn.over(low+delta, high+delta)
+                if len(overviews) != 0:
+                    fail("OVER: unexpected overview data: delta=%#x"
                          % delta)
-            overviews=conn.over(high, low)
-            if len(overviews)!=0:
+            overviews = conn.over(high, low)
+            if len(overviews) != 0:
                 fail("OVER: unexpected overview data: reverse range")
         if b'HDR' in conn.capabilities():
-            done=True
+            done = True
             for delta in _number_deltas:
-                headers=conn.hdr(b'Newsgroups', low+delta, high+delta)
-                if len(headers)!=0:
-                    fail("HDR: unexpected header data: delta=%d"
+                headers = conn.hdr(b'Newsgroups', low+delta, high+delta)
+                if len(headers) != 0:
+                    fail("HDR: unexpected header data: delta=%#x"
                          % delta)
-            headers=conn.over(high, low)
-            if len(headers)!=0:
+            headers = conn.over(high, low)
+            if len(headers) != 0:
                 fail("HDR: unexpected header data: reverse range")
         if not done:
             skip("no OVER or HDR capability")

@@ -19,7 +19,7 @@
 # Test using nntpbits
 #
 set -e
-. ./config
+. ${INNTEST_CONFIG:-./config}
 
 configuration="$1"
 shift

@@ -39,7 +39,7 @@ ${REALLY} rm -rf $PREFIX/share/*
 ${REALLY} rm -rf $PREFIX/spool/*
 ${REALLY} rm -rf $PREFIX/tmp/*
 echo install ...
-${REALLY} make -C $DIR install > install.log 2>&1
+${REALLY} make -C $DIR install > install.log 2>&1 || { cat install.log; exit 1; }
 if ${VALGRIND:-false}; then
     echo valgrindize ...
     ${REALLY} $SELF/valgrindize --log $PREFIX/log $PREFIX/bin/innd

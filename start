@@ -24,8 +24,8 @@
 # Starts INN.
 #
 set -e
-. ./config
+. ${INNTEST_CONFIG:-./config}
 
 echo start ...
-${REALLY} su - ${USER} -c "${PREFIX}/bin/rc.news" > start.log 2>&1
+${REALLY} su - ${USER} -c "${PREFIX}/bin/rc.news" > start.log 2>&1 || { cat start.log; exit 1; }
 sleep 3                         # let it settle

@@ -15,7 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import nntpbits
-import logging,select,socket,threading,time,traceback
+import logging
+import select
+import socket
+import threading
+import time
+import traceback
+
 
 class NewsServer(object):
     """NewsServer() -> NNTP server object
@@ -34,10 +40,11 @@ class NewsServer(object):
     self.lock, which is created by the constructor.
 
     """
+
     def __init__(self, conncls=nntpbits.ServerConnection):
-        self.conncls=conncls
-        self.lock=threading.Lock()
-        self.log=logging.getLogger(__name__)
+        self.conncls = conncls
+        self.lock = threading.Lock()
+        self.log = logging.getLogger(__name__)
 
     # -------------------------------------------------------------------------
     # Listening
@@ -55,16 +62,17 @@ class NewsServer(object):
         s.setblocking(False)
         while True:
             nntpbits._maybe_stop()
-            select.select([s],[],[],1.0)
+            select.select([s], [], [], 1.0)
             try:
-                (ns,a)=s.accept()
+                (ns, a) = s.accept()
             except BlockingIOError:
                 continue
+
             def worker(ns, a):
                 try:
                     self.log.info("%x: connected %s"
                                   % (threading.get_ident(), a))
-                    conn=self.conncls(self)
+                    conn = self.conncls(self)
                     conn.enable(features)
                     conn.socket(ns)
                     self.log.info("%x: disconnected %s"
@@ -79,7 +87,7 @@ class NewsServer(object):
                                    % (threading.get_ident(), traceback.format_exc()))
                 finally:
                     nntpbits.finished_thread()
-            t=threading.Thread(target=worker, args=[ns,a], daemon=daemon)
+            t = threading.Thread(target=worker, args=[ns, a], daemon=daemon)
             nntpbits.start_thread(t)
 
     def listen_address(self, address, port, wait=False, daemon=True,
@@ -100,42 +108,44 @@ class NewsServer(object):
 
         """
         if address == '*':
-            addresses = ['0.0.0.0','::']
+            addresses = ['::']  # assume IPV6_V6ONLY=0
         elif address == '*localhost':
-            addresses = ['127.0.0.1','::1']
+            addresses = ['127.0.0.1', '::1']
         else:
             addresses = [address]
-        addrs=[]
+        addrs = []
         for address in addresses:
             addrs.extend(socket.getaddrinfo(address, port,
                                             0, socket.SOCK_STREAM, 0,
                                             socket.AI_PASSIVE
-                                            |socket.AI_ADDRCONFIG))
+                                            | socket.AI_ADDRCONFIG))
         for addr in addrs:
-            (family, type_, proto, canonname, sockaddr)=addr
-            s=socket.socket(family,type_,proto)
+            (family, type_, proto, canonname, sockaddr) = addr
+            s = socket.socket(family, type_, proto)
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(sockaddr)
             s.listen(socket.SOMAXCONN)
+
             def worker(s, sockaddr):
                 try:
                     self.log.info("%x: listener started %s"
-                                 % (threading.get_ident(), sockaddr))
+                                  % (threading.get_ident(), sockaddr))
                     self.listen_socket(s, daemon=daemon, features=features)
                     self.log.info("%x: listener returned"
-                                 % (threading.get_ident()))
+                                  % (threading.get_ident()))
                 except nntpbits._Stop:
                     self.log.debug("%x: listener stopped %s"
-                                  % (threading.get_ident(), sockaddr))
+                                   % (threading.get_ident(), sockaddr))
                 except BaseException as e:
                     self.log.error("%x: listener error %s %s"
-                                  % (threading.get_ident(), e, sockaddr))
+                                   % (threading.get_ident(), e, sockaddr))
                     self.log.error("%x: %s"
-                                  % (threading.get_ident(),
-                                     traceback.format_exc()))
+                                   % (threading.get_ident(),
+                                      traceback.format_exc()))
                 finally:
                     nntpbits.finished_thread()
-            t=threading.Thread(target=worker, args=[s,sockaddr], daemon=daemon)
+            t = threading.Thread(target=worker, args=[
+                                 s, sockaddr], daemon=daemon)
             nntpbits.start_thread(t)
         while wait:
             nntpbits._maybe_stop()

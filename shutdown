@@ -19,8 +19,8 @@
 # Shut down INN
 #
 set -e
-. ./config
+. ${INNTEST_CONFIG:-./config}
 echo shutdown ...
-exec > shutdown.log 2>&1
+#exec > shutdown.log 2>&1
 ${REALLY} su - ${USER} -s /bin/sh -c "${PREFIX}/bin/ctlinnd shutdown inntest" || true
 ${REALLY} su - ${USER} -s /bin/sh -c "killall innwatch" || true

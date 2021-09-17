@@ -19,8 +19,12 @@
 # Build a clean INN
 #
 set -e
-. ./config
+. ${INNTEST_CONFIG:-./config}
 SELF=$(pwd)
+if ! [ -d $DIR ] && [ -f $DIR.tar.gz ]; then
+    echo unpack ...
+    tar xf $DIR.tar.gz 
+fi
 cd $DIR
 echo autogen ...
 ./autogen
@@ -28,14 +32,14 @@ echo configure ...
 set -- --prefix=$PREFIX --with-perl --with-python --with-openssl \
             --with-sasl --with-news-user=${USER} --with-news-group=${USER} \
             --enable-largefiles --with-innd-port=1119 --with-bdb --with-zlib
-./configure "$@" > ${SELF}/configure.log 2>&1
+./configure "$@" > ${SELF}/configure.log 2>&1 || { cat ${SELF}/configure.log; cat config.log; exit 1; }
 cd ${SELF}
 echo make bootstrap ...
-make -C $DIR bootstrap > bootstrap.log 2>&1
+make -C $DIR bootstrap > bootstrap.log 2>&1 || { cat bootstrap.log; exit 1; }
 echo make clean ...
-make -C $DIR clean > clean.log 2>&1
+make -C $DIR clean > clean.log 2>&1 || { cat clean.log; exit 1; }
 echo make ...
-make -C $DIR -j4 > build.log 2>&1
+make -C $DIR -j$(nproc) > build.log 2>&1 || { cat build.log; exit 1; }
 echo make check ...
-make -C $DIR check > check.log 2>&1
+make -C $DIR check > check.log 2>&1 || { cat check.log; exit 1; }
 echo build complete

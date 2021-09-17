@@ -24,7 +24,7 @@
 # Performs common changes to configuration.
 #
 set -e
-. ./config
+. ${INNTEST_CONFIG:-./config}
 
 echo configuration ...
 

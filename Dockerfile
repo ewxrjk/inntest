@@ -39,6 +39,7 @@ RUN eatmydata -- apt-get -y update \
     perl \
     perl-openssl-defaults \
     procps \
+    psmisc \
     python3 \
     python3-dev \
     rsyslog \

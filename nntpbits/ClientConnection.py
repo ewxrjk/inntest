@@ -15,10 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import nntpbits
-import logging,re,socket
+import logging
+import re
+import socket
 
-_group_re=re.compile(b"^([0-9]+) ([0-9]+) ([0-9]+) (.*)$")
-_message_id_re=re.compile(b"Message-ID:\\s*(<.*@.*>)\\s*$", re.IGNORECASE)
+_group_re = re.compile(b"^([0-9]+) ([0-9]+) ([0-9]+) (.*)$")
+_message_id_re = re.compile(b"Message-ID:\\s*(<.*@.*>)\\s*$", re.IGNORECASE)
+
 
 class ClientConnection(nntpbits.Connection):
     """NNTP client endpoint
@@ -41,16 +44,17 @@ class ClientConnection(nntpbits.Connection):
     automatically issued.
 
     """
+
     def __init__(self, address=None, timeout=None, source_address=None,
                  stoppable=False, nnrp_user=None, nnrp_password=None,
                  nntp_user=None, nntp_password=None):
         nntpbits.Connection.__init__(self, stoppable=stoppable)
-        self.nnrp_user=nntpbits._normalize(nnrp_user)
-        self.nnrp_password=nntpbits._normalize(nnrp_password)
-        self.nntp_user=nntpbits._normalize(nntp_user)
-        self.nntp_password=nntpbits._normalize(nntp_password)
+        self.nnrp_user = nntpbits._normalize(nnrp_user)
+        self.nnrp_password = nntpbits._normalize(nnrp_password)
+        self.nntp_user = nntpbits._normalize(nntp_user)
+        self.nntp_password = nntpbits._normalize(nntp_password)
         self._reset()
-        self.log=logging.getLogger(__name__)
+        self.log = logging.getLogger(__name__)
         if address is not None:
             self.connect(address, timeout, source_address)
 
@@ -58,7 +62,8 @@ class ClientConnection(nntpbits.Connection):
         return self
 
     def __exit__(self, et, ev, etb):
-        self.log.debug("ClientConnection.__exit__: %s / %s / %s" % (et, ev, etb))
+        self.log.debug("ClientConnection.__exit__: %s / %s / %s" %
+                       (et, ev, etb))
         if self.r is not None or self.w is not None:
             self.quit()
         return False
@@ -69,14 +74,14 @@ class ClientConnection(nntpbits.Connection):
         Reset the state of this connection.
 
         """
-        self.service=None
-        self.posting=None
-        self.reader=None
-        self.rfc4644=None
-        self.capability_list=None
-        self.capability_set=None
-        self.overview_fmt=None
-        self.current_group=None
+        self.service = None
+        self.posting = None
+        self.reader = None
+        self.rfc4644 = None
+        self.capability_list = None
+        self.capability_set = None
+        self.overview_fmt = None
+        self.current_group = None
 
     def connect(self, address, timeout=None, source_address=None):
         """n.connect(address[, timeout[, source_address]])
@@ -102,23 +107,23 @@ class ClientConnection(nntpbits.Connection):
         establish IO.
 
         """
-        code,arg=self.wait()
+        code, arg = self.wait()
         # 3977 5.1.1
         if code == 200:
-            self.service=True
-            self.posting=True
+            self.service = True
+            self.posting = True
         elif code == 201:
-            self.service=True
-            self.posting=False
+            self.service = True
+            self.posting = False
         elif code == 400 or code == 502:
-            self.service=False
+            self.service = False
             self.disconnect()   # 5.1.1 [2]
         else:
             # 5.1.1 [1]
             raise ValueError("invalid initial connection response: %s"
                              % self.response)
-        self.reader=None
-        self.capability_list=None
+        self.reader = None
+        self.capability_list = None
         return self.service
 
     def transact(self, *args):
@@ -128,35 +133,38 @@ class ClientConnection(nntpbits.Connection):
         if necessary.
 
         """
-        code,arg=super().transact(*args)
+        code, arg = super().transact(*args)
         if code == 480 and self._authorize():
-            code,arg=super().transact(*args)
-        return code,arg
+            code, arg = super().transact(*args)
+        return code, arg
 
     def _authorize(self):
         if b'READER' in self.capabilities():
-            user=self.nnrp_user
-            password=self.nnrp_password
+            user = self.nnrp_user
+            password = self.nnrp_password
         else:
-            user=self.nntp_user
-            password=self.nntp_password
+            user = self.nntp_user
+            password = self.nntp_password
         if user is not None:
-            code,arg=self.transact([b'AUTHINFO', b'USER', user])
-            if code==281:
+            code, arg = self.transact([b'AUTHINFO', b'USER', user])
+            if code == 281:
                 return True
-            if code!=381:
+            if code != 381:
                 self.log.error("username %s not accepted" % user)
                 return False
         if password is not None:
-            code,arg=self.transact([b'AUTHINFO', b'PASS', password])
-            if code==281:
+            code, arg = self.transact([b'AUTHINFO', b'PASS', password])
+            if code == 281:
                 return True
             self.log.error("password not accepted")
         return False
 
     def _failed(self, command):
+        if isinstance(command, bytes):
+            command = str(command, 'ascii')
+        response = self.response
         raise Exception("%s command failed: %s"
-                        % (str(command, 'ascii'),
+                        % (command,
                            str(self.response, 'ascii')))
 
     # -------------------------------------------------------------------------
@@ -170,16 +178,16 @@ class ClientConnection(nntpbits.Connection):
         in the future.)
 
         """
-        code,arg=self.transact(b"CAPABILITIES")
+        code, arg = self.transact(b"CAPABILITIES")
         if code == 101:
-            self.capability_list=self.receive_lines()
+            self.capability_list = self.receive_lines()
             if self.capability_list[0] != b'VERSION 2':
                 raise Exception("CAPABILITIES: unrecognized version")
         else:
-            self.capability_list=[]
-        self.capability_set=set()
+            self.capability_list = []
+        self.capability_set = set()
         for cap in self.capability_list[1:]:
-            caps=cap.split()
+            caps = cap.split()
             self.capability_set.add(caps[0])
 
     def capabilities(self):
@@ -203,12 +211,12 @@ class ClientConnection(nntpbits.Connection):
         the server doesn't have that capability.
 
         """
-        cap=nntpbits._normalize(cap)
+        cap = nntpbits._normalize(cap)
         if self.capability_set is None:
             self._capabilities()
         for l in self.capability_list:
-            caps=l.split()
-            if caps[0]==cap:
+            caps = l.split()
+            if caps[0] == cap:
                 return caps[1:]
         return None
 
@@ -224,11 +232,11 @@ class ClientConnection(nntpbits.Connection):
         if self.reader is None:
             self.capabilities()
             if b"READER" in self.capability_list:
-                self.reader=True
+                self.reader = True
             elif b"MODE-READER" in self.capability_list:
                 self._mode_reader()
             elif len(self.capability_list) > 0:
-                self.reader=False
+                self.reader = False
             else:
                 self._mode_reader()
         if not self.reader:
@@ -241,19 +249,19 @@ class ClientConnection(nntpbits.Connection):
         Resets the cached capability list if it succeeds.
 
         """
-        code,arg=self.transact(b"MODE READER")
+        code, arg = self.transact(b"MODE READER")
         if code == 200:
-            self.reader=True
-            self.posting=True
+            self.reader = True
+            self.posting = True
         elif code == 201:
-            self.reader=True
-            self.posting=False
+            self.reader = True
+            self.posting = False
         else:
             self._failed('MODE READER')
-        self.capability_list=None
-        self.capability_set=None
-        self.overview_fmt=None
-        self.rfc4644=None
+        self.capability_list = None
+        self.capability_set = None
+        self.overview_fmt = None
+        self.rfc4644 = None
 
     # -------------------------------------------------------------------------
     # QUIT (3977 5.4)
@@ -278,13 +286,13 @@ class ClientConnection(nntpbits.Connection):
 
         """
         self._require_reader()
-        group=nntpbits._normalize(group)
-        code,arg=self.transact(b"GROUP " + group)
+        group = nntpbits._normalize(group)
+        code, arg = self.transact(b"GROUP " + group)
         if code == 211:
-            m=_group_re.match(arg)
+            m = _group_re.match(arg)
             if not m:
                 raise Exception("GROUP response malformed: %s" % self.response)
-            self.current_group=group
+            self.current_group = group
             return (int(m.group(1)), int(m.group(2)), int(m.group(3)))
         elif code == 411:
             raise Exception("Group %s does not exist" % str(group))
@@ -306,17 +314,18 @@ class ClientConnection(nntpbits.Connection):
 
         """
         self._require_reader()
-        cmd=[b'LISTGROUP']
+        cmd = [b'LISTGROUP']
         if low is not None:
             cmd.append(bytes("%d-%d" % (low, high), 'ascii'))
         if group is not None:
             cmd.append(nntpbits._normalize(group))
-        code,arg=self.transact(cmd)
+        code, arg = self.transact(cmd)
         if code == 211:
-            m=_group_re.match(arg)
+            m = _group_re.match(arg)
             if not m:
-                raise Exception("LISTGROUP response malformed: %s" % self.response)
-            self.current_group=group
+                raise Exception(
+                    "LISTGROUP response malformed: %s" % self.response)
+            self.current_group = group
             return (int(m.group(1)), int(m.group(2)), int(m.group(3)),
                     [int(line) for line in self.receive_lines()])
         else:
@@ -326,7 +335,6 @@ class ClientConnection(nntpbits.Connection):
     # LAST & NEXT (3977 6.1.3-4)
 
     def next(self):
-
         """n.next() -> NUMBER,ID,None | None,None,None
 
         Advance to the next article in the group.  Returns the newly
@@ -368,22 +376,22 @@ class ClientConnection(nntpbits.Connection):
 
         """
         if isinstance(ident, int):
-            ident="%d" % ident
+            ident = "%d" % ident
         if ident is None:
             return self._select(b'STAT')
         else:
             return self._select(b'STAT', nntpbits._normalize(ident))
 
-    _stat_re=re.compile(b'^(\\d+) +(<[^>]+>)( +.*)?$')
-    _select_noarticle=set([420, 421, 422, 423])
+    _stat_re = re.compile(b'^(\\d+) +(<[^>]+>)( +.*)?$')
+    _select_noarticle = set([420, 421, 422, 423])
 
     def _select(self, *cmd):
-        code,arg=self.transact(b' '.join(cmd))
-        if code==223:
-            m=ClientConnection._stat_re.match(arg)
+        code, arg = self.transact(b' '.join(cmd))
+        if code == 223:
+            m = ClientConnection._stat_re.match(arg)
             if not m:
                 raise Exception("%s command malformed response: %s"
-                        % (str(cmd[0]), arg))
+                                % (str(cmd[0]), arg))
             return (int(m.group(1)), m.group(2), None)
         if code in ClientConnection._select_noarticle:
             return None, None, None
@@ -393,7 +401,6 @@ class ClientConnection(nntpbits.Connection):
     # ARTICLE, HEAD, BODY (3977 6.2.1-3)
 
     def article(self, ident=None):
-
         """n.article(ID|NUMBER) -> NUMBER,IDENT,LINES | None,None,None
         n.article() -> NUMBER,IDENT,LINES | None,None,None
 
@@ -447,20 +454,20 @@ class ClientConnection(nntpbits.Connection):
         """
         self._require_reader()
         if isinstance(ident, int):
-            ident="%d" % ident
+            ident = "%d" % ident
         if ident is None:
-            cmd=command
+            cmd = command
         else:
-            cmd=command + b' ' + nntpbits._normalize(ident)
-        code,arg=self.transact(cmd)
+            cmd = command + b' ' + nntpbits._normalize(ident)
+        code, arg = self.transact(cmd)
         if code == response:
-            m=ClientConnection._stat_re.match(arg)
+            m = ClientConnection._stat_re.match(arg)
             if not m:
                 raise Exception("%s command malformed response: %s"
-                        % (str(command), arg))
+                                % (str(command), arg))
             return int(m.group(1)), m.group(2), self.receive_lines()
         elif code == 423 or code == 430:
-            return None,None,None
+            return None, None, None
         else:
             self._failed(command)
 
@@ -511,23 +518,23 @@ class ClientConnection(nntpbits.Connection):
         instead.
 
         """
-        ident=ClientConnection._ident(article, ident)
+        ident = ClientConnection._ident(article, ident)
         return self._post(article, b'IHAVE', ident, 335, 235)
 
     @staticmethod
     def _ident(article, ident=None):
         if ident is None:
             if isinstance(article, bytes):
-                article=article.splitlines()
+                article = article.splitlines()
             for line in article:
                 if line == "":
                     break
-                m=_message_id_re.match(line)
+                m = _message_id_re.match(line)
                 if m:
-                    ident=m.group(1)
+                    ident = m.group(1)
                     break
         else:
-            ident=nntpbits._normalize(ident)
+            ident = nntpbits._normalize(ident)
         if ident is None:
             raise Exception("failed to extract message ID from article")
         return ident
@@ -544,20 +551,20 @@ class ClientConnection(nntpbits.Connection):
         to check for in the two phases of the posting process.
 
         """
-        article=nntpbits._normalize(article)
+        article = nntpbits._normalize(article)
         if isinstance(article, bytes):
-            article=article.splitlines()
-        code,arg=self.transact(command if ident is None
-                               else command + b' ' + ident)
+            article = article.splitlines()
+        code, arg = self.transact(command if ident is None
+                                  else command + b' ' + ident)
         if code == 435 or code == 436:
             return code
-        if code!=initial_response:
+        if code != initial_response:
             self._failed(command)
         self.send_lines(article)
-        code,arg=self.wait()
+        code, arg = self.wait()
         if code == 436 or code == 437:
             return code
-        if code!=ok_response:
+        if code != ok_response:
             self._failed(command)
         return code
 
@@ -572,7 +579,7 @@ class ClientConnection(nntpbits.Connection):
 
         """
         self._require_reader()
-        code,arg=self.transact(b'DATE')
+        code, arg = self.transact(b'DATE')
         if code == 111:
             return arg
         else:
@@ -587,7 +594,7 @@ class ClientConnection(nntpbits.Connection):
         Returns the server's help output.
 
         """
-        code,arg=self.transact(b'HELP')
+        code, arg = self.transact(b'HELP')
         if code == 100:
             return self.receive_lines()
         else:
@@ -611,13 +618,13 @@ class ClientConnection(nntpbits.Connection):
         third is the result of the DATE command and the date() method.
 
         """
-        date=ClientConnection._newstuff_date(date, gmt)
+        date = ClientConnection._newstuff_date(date, gmt)
         self._require_reader()
-        cmd=[b'NEWGROUPS', date[:-6], date[-6:]]
+        cmd = [b'NEWGROUPS', date[:-6], date[-6:]]
         if gmt:
             cmd.append(b'GMT')
-        code,arg=self.transact(cmd)
-        if code==231:
+        code, arg = self.transact(cmd)
+        if code == 231:
             return self.receive_lines()
         else:
             self._failed('NEWGROUPS')
@@ -640,23 +647,23 @@ class ClientConnection(nntpbits.Connection):
         The first two are the native format for NNTP NEWNEWS; the
         third is the result of the DATE command and the date() method.
         """
-        date=ClientConnection._newstuff_date(date, gmt)
+        date = ClientConnection._newstuff_date(date, gmt)
         self._require_reader()
-        cmd=[b'NEWNEWS', wildmat, date[:-6], date[-6:]]
+        cmd = [b'NEWNEWS', wildmat, date[:-6], date[-6:]]
         if gmt:
             cmd.append(b'GMT')
-        code,arg=self.transact(cmd)
-        if code==230:
+        code, arg = self.transact(cmd)
+        if code == 230:
             return self.receive_lines()
         else:
             self._failed('NEWNEWS')
 
     def _newstuff_date(date, gmt):
         if isinstance(date, list):
-            date=b''.join(nntpbits._normalize(date))
+            date = b''.join(nntpbits._normalize(date))
         elif isinstance(date, int) or isinstance(date, float):
             assert gmt
-            date=time.strftime("%Y%m%d%H%M%S", time.gmtime(date))
+            date = time.strftime("%Y%m%d%H%M%S", time.gmtime(date))
         return nntpbits._normalize(date)
 
     # -------------------------------------------------------------------------
@@ -676,22 +683,22 @@ class ClientConnection(nntpbits.Connection):
 
         """
         if what is None:
-            cap=b'ACTIVE'
+            cap = b'ACTIVE'
         else:
-            what=nntpbits._normalize(what).upper()
-            cap=what.split(b' ')[0]
+            what = nntpbits._normalize(what).upper()
+            cap = what.split(b' ')[0]
         # Become a reader if necessary
         if (cap not in self.capability_arguments(b'LIST')
-            and b'MODE-READER' in self.capabilites()):
+                and b'MODE-READER' in self.capabilites()):
             self._mode_reader()
         if what is None:
-            cmd=[b'LIST']
+            cmd = [b'LIST']
             assert wildmat is None
         else:
-            cmd=[b'LIST', what]
+            cmd = [b'LIST', what]
             if wildmat is not None:
                 cmd.append(nntpbits._normalize(wildmat))
-        code,arg=self.transact(b' '.join(cmd))
+        code, arg = self.transact(b' '.join(cmd))
         if code == 215:
             return self.receive_lines()
         elif code == 503:
@@ -724,9 +731,10 @@ class ClientConnection(nntpbits.Connection):
         """
         self._require_reader()
         if high is not None:
-            code,arg=self.transact(bytes('OVER %d-%d' % (low, high), 'ascii'))
+            code, arg = self.transact(
+                bytes('OVER %d-%d' % (low, high), 'ascii'))
         else:
-            code,arg=self.transact(b'OVER ' + nntpbits._normalize(low))
+            code, arg = self.transact(b'OVER ' + nntpbits._normalize(low))
         if code == 224:
             return self.receive_lines()
         elif code == 423:
@@ -750,21 +758,21 @@ class ClientConnection(nntpbits.Connection):
         Values in DICT are bytes objects.
 
         """
-        r={}
-        fields=line.split(b'\t')
-        fmt=self.list_overview_fmt()
-        for n in range(1,len(fields)):
-            field=fields[n]
-            name=fmt[n-1].lower()
+        r = {}
+        fields = line.split(b'\t')
+        fmt = self.list_overview_fmt()
+        for n in range(1, len(fields)):
+            field = fields[n]
+            name = fmt[n-1].lower()
             if n < 6 or name[0:1] == b':':
-                r[name]=field
+                r[name] = field
             else:
-                n=len(name)
+                n = len(name)
                 if field[0:n].lower() != name:
                     raise Exception("malformed overview data for %s" % name)
-                while n<len(field) and field[n] in b' \t\r\f\n':
-                    n+=1
-                r[name]=field[n:]
+                while n < len(field) and field[n] in b' \t\r\f\n':
+                    n += 1
+                r[name] = field[n:]
         return (int(fields[0]), r)
 
     def _list_overview_fmt(self):
@@ -775,20 +783,20 @@ class ClientConnection(nntpbits.Connection):
 
         """
         if b'OVER' in self.capabilities():
-            code,arg=self.transact(b"LIST OVERVIEW.FMT")
+            code, arg = self.transact(b"LIST OVERVIEW.FMT")
             if code == 215:
-                self.overview_fmt=[x.lower() for x in self.receive_lines()]
-                fixups={ b'bytes:': b':bytes', b'lines:': b':lines' }
-                for i in range(0,len(self.overview_fmt)):
-                    l=self.overview_fmt[i]
+                self.overview_fmt = [x.lower() for x in self.receive_lines()]
+                fixups = {b'bytes:': b':bytes', b'lines:': b':lines'}
+                for i in range(0, len(self.overview_fmt)):
+                    l = self.overview_fmt[i]
                     if len(l) >= 5 and l[-5:] == b':full':
-                        self.overview_fmt[i]=self.overview_fmt[i][:-5]
+                        self.overview_fmt[i] = self.overview_fmt[i][:-5]
                     if l in fixups:
-                        self.overview_fmt[i]=fixups[l]
+                        self.overview_fmt[i] = fixups[l]
             else:
-                self.overview_fmt=[]
+                self.overview_fmt = []
         else:
-            self.overview_fmt=[]
+            self.overview_fmt = []
         return self.overview_fmt
 
     def list_overview_fmt(self):
@@ -809,7 +817,7 @@ class ClientConnection(nntpbits.Connection):
     # -------------------------------------------------------------------------
     # HDR (3977 8.5, 8.6)
 
-    _hdr_re=re.compile(b'^(\\d+) (.*)$')
+    _hdr_re = re.compile(b'^(\\d+) (.*)$')
 
     def hdr(self, header, low, high=None):
         """n.over(HEADER, LOW, HIGH) -> LIST
@@ -828,17 +836,17 @@ class ClientConnection(nntpbits.Connection):
 
         """
         self._require_reader()
-        cmd=[b'HDR', nntpbits._normalize(header)]
+        cmd = [b'HDR', nntpbits._normalize(header)]
         if high is not None:
             cmd.append(bytes("%d-%d" % (low, high), 'ascii'))
         else:
             cmd.append(nntpbits._normalize(low))
-        code,argument=self.transact(cmd)
+        code, argument = self.transact(cmd)
         if code == 225:
-            lines=self.receive_lines()
-            result=[]
+            lines = self.receive_lines()
+            result = []
             for line in lines:
-                m=ClientConnection._hdr_re.match(line)
+                m = ClientConnection._hdr_re.match(line)
                 if not m:
                     raise Exception("HDR response malformed: %s" % lie)
                 result.append([int(m.group(1)), m.group(2)])
@@ -860,10 +868,10 @@ class ClientConnection(nntpbits.Connection):
         otherwise False."""
         if self.rfc4644 is None:
             if b'STREAMING' in self.capabilities():
-                self.rfc4644=True
+                self.rfc4644 = True
             else:
-                code,argument=self.transact(b'MODE STREAMING')
-                self.rfc4644=(code==203)
+                code, argument = self.transact(b'MODE STREAMING')
+                self.rfc4644 = (code == 203)
         return self.rfc4644
 
     # -------------------------------------------------------------------------
@@ -882,13 +890,13 @@ class ClientConnection(nntpbits.Connection):
         None -- ask again later
 
         """
-        ident=ClientConnection._ident(article, ident)
-        code,argument=self.transact([b'CHECK', ident])
-        if code==238:
+        ident = ClientConnection._ident(article, ident)
+        code, argument = self.transact([b'CHECK', ident])
+        if code == 238:
             return True
-        if code==438:
+        if code == 438:
             return False
-        if code==431:
+        if code == 431:
             return None
         self._failed('CHECK')
 
@@ -909,12 +917,12 @@ class ClientConnection(nntpbits.Connection):
         failure so this command may terminate the connection.
 
         """
-        ident=ClientConnection._ident(article, ident)
+        ident = ClientConnection._ident(article, ident)
         self.send_line([b'TAKETHIS', ident])
         self.send_lines(article)
-        code,argument=self.wait()
-        if code==239:
+        code, argument = self.wait()
+        if code == 239:
             return True
-        if code==439:
+        if code == 439:
             return False
         self._failed('TAKETHIS')

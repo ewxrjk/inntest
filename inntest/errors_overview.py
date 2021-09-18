@@ -40,20 +40,47 @@ def test_errors_group_overview():
         if b'OVER' in conn.capabilities():
             done = True
             for delta in _number_deltas:
-                overviews = conn.over(low+delta, high+delta)
+                l, h = low+delta, high+delta
+                code, arg = conn.transact([b'OVER', b'%d-%d' % (l, h)])
+                overviews = []
+                if code == 224:
+                    overviews = conn.receive_lines()
+                elif code == 423:
+                    pass
+                elif code == 501:
+                    if l < 0x7FFFFFFF and h < 0x7FFFFFFF:
+                        fail("OVER: unexpected response for %d-%d: %s"
+                             % (l, h, conn.response))
+                else:
+                    fail("OVER: unexpected response for %d-%d: %s"
+                         % (l, h, conn.response))
                 if len(overviews) != 0:
-                    fail("OVER: unexpected overview data: delta=%#x"
-                         % delta)
+                    fail("OVER: unexpected overview data for %d-%d"
+                         % (l, h))
             overviews = conn.over(high, low)
             if len(overviews) != 0:
                 fail("OVER: unexpected overview data: reverse range")
         if b'HDR' in conn.capabilities():
             done = True
             for delta in _number_deltas:
-                headers = conn.hdr(b'Newsgroups', low+delta, high+delta)
+                l, h = low+delta, high+delta
+                code, arg = conn.transact(
+                    [b'HDR', b'Newsgroups', b'%d-%d' % (l, h)])
+                headers = []
+                if code == 225:
+                    headers = conn.receive_lines()
+                elif code == 423:
+                    pass
+                elif code == 501:
+                    if l < 0x7FFFFFFF and h < 0x7FFFFFFF:
+                        fail("HDR: unexpected response for %d-%d: %s"
+                             % (l, h, conn.response))
+                else:
+                    fail("HDR: unexpected response for %d-%d: %s"
+                         % (l, h, conn.response))
                 if len(headers) != 0:
-                    fail("HDR: unexpected header data: delta=%#x"
-                         % delta)
+                    fail("HDR: unexpected header data: %d-%d"
+                         % (l, h))
             headers = conn.over(high, low)
             if len(headers) != 0:
                 fail("HDR: unexpected header data: reverse range")

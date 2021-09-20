@@ -35,10 +35,10 @@ esac
 [ -f sources.buster ] || touch sources.buster
 
 echo docker build ...
+cp "$1" inn.tar.gz
 docker build -t ${INNTEST_CONTAINER:-inntest} .
 
 echo docker run ...
 docker run \
-    --mount type=bind,source="$1",target=/work/inn.tar.gz \
     --hostname ${PATHHOST} \
-    inntest:latest /work/test-docker-run
+    inntest:latest /work/tests

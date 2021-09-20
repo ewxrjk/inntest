@@ -19,6 +19,4 @@ set -e
 . ${INNTEST_CONFIG:-./config}
 
 ./build
-
-./test-innfeed
-./test-nntpsend
+./tests

@@ -56,8 +56,10 @@ ENV DIR=/work/inn
 ENV USER=news
 RUN chsh -s /bin/bash news
 RUN mkdir -p /var/spool/news && chown news:news /var/spool/news
-ADD build configure install shutdown start test* trigger valgrind* *.py /work/
-ADD inntest /work/inntest
-ADD nntpbits /work/nntpbits
+ADD build configure install valgrind* /work/
 ADD config /work/
-VOLUME /work/inn.tar.gz
+ADD inn.tar.gz /work
+RUN ./build
+ADD nntpbits /work/nntpbits
+ADD shutdown start test* trigger *.py /work/
+ADD inntest /work/inntest

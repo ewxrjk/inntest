@@ -157,15 +157,11 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
            b'Subject: [nntpbits] malformed from test (ignore)',
            b'Date: ' + inntest.newsdate()],
           compatibility=(cmd == b'IHAVE'))
-    # INN's nnrpd doens't full check the From: syntax.  This has been reported
-    # and may be fixed in a future version, at which point the test is likely
-    # to be tightened up.
     check('malformed from #2',
           [b'Newsgroups: ' + inntest.group,
            b'From: @example.com',
            b'Subject: [nntpbits] malformed from test #2 (ignore)',
            b'Date: ' + inntest.newsdate()],
-          expected_fail=(cmd == b'POST'),
           compatibility=(cmd == b'IHAVE'))
     check('forbidden newsgroup',
           [b'Newsgroups: poster',

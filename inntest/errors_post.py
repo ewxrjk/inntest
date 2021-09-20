@@ -49,10 +49,27 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
 
     Test IHAVE/POST error behavior.
 
+    conn -- Connection
+    cmd -- NNTP command (POST/IHAVE)
+    initial_response -- initial positive response (i.e. to request body)
+    ok_response -- success response to body
+    error_response -- error response to body
+    extras -- list of extra headers (e.g. Path for IHAVE)
+
     """
     def check(what, article, ident=None,
               error_response=error_response, add_body=True,
               expected_fail=False, compatibility=False, extras=extras):
+        """Perform one check
+
+        what -- description of what is being tested
+        article -- article as list of byte
+        error_response -- error response to body (i.e. what we are looking for)
+        add_body -- include a nonempty body; normally True
+        expected_fail -- we expect this test to fail; report as expected failure
+        compatibility -- we expect this test to fail; report as a compatibility measure
+        extras -- list of extra headers (e.g. Path for IHAVE); normally inherited
+        """
         if ident is None:
             ident = inntest.ident()
             article = [b'Message-ID: '+ident]+article

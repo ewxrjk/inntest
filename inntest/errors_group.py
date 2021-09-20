@@ -18,6 +18,8 @@ import inntest
 import nntpbits
 from inntest.running import *
 
+# Tests for group inspection and navigation
+
 # Commands that check or fetch part of an article by ID, number or current
 _article_commands = [b'ARTICLE', b'HEAD', b'BODY', b'STAT']
 # Various offsets, representing attempts to tickle overflow behavior in

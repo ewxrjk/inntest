@@ -14,9 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import inntest,nntpbits
-import os,time
+import inntest
+import nntpbits
+import os
+import time
 from inntest.running import *
+
 
 def test_post(ident=None, description=b"posting test"):
     """inntest.Tests.test_post([ident=IDENT][description=SUBJECT])
@@ -31,13 +34,14 @@ def test_post(ident=None, description=b"posting test"):
     line.
 
     """
-    ident=inntest.ident(ident)
-    article=[b'Newsgroups: ' + inntest.group,
-             b'From: ' + inntest.email,
-             b'Subject: [nntpbits] ' + nntpbits._normalize(description) + b' (ignore)',
-             b'Message-ID: ' + ident,
-             b'',
-             b'nntpbits.Test test posting']
+    ident = inntest.ident(ident)
+    article = [b'Newsgroups: ' + inntest.group,
+               b'From: ' + inntest.email,
+               b'Subject: [nntpbits] ' +
+               nntpbits._normalize(description) + b' (ignore)',
+               b'Message-ID: ' + ident,
+               b'',
+               b'nntpbits.Test test posting']
     with inntest.connection() as conn:
         conn.post(article)
         try:
@@ -47,6 +51,7 @@ def test_post(ident=None, description=b"posting test"):
                 raise e
         _check_posted(conn, ident)
 
+
 def _check_posted(conn, ident):
     """s._check_posted(CONN, IDENT)
 
@@ -54,28 +59,29 @@ def _check_posted(conn, ident):
     CONN as the client connection.
 
     """
-    _,_,article_posted=conn.article(ident)
+    _, _, article_posted = conn.article(ident)
     if article_posted is None:
         fail("article cannot be retrieved by message-ID")
-    (count,low,high)=conn.group(inntest.group)
-    overviews=conn.over(low,high)
-    number_in_group=None
+    (count, low, high) = conn.group(inntest.group)
+    overviews = conn.over(low, high)
+    number_in_group = None
     for overview in overviews:
-        (number,overview)=conn.parse_overview(overview)
+        (number, overview) = conn.parse_overview(overview)
         if overview[b'message-id:'] == ident:
-            number_in_group=number
+            number_in_group = number
             break
     if number_in_group is None:
         fail("article not found in group overview data")
-    _,_,article_posted=conn.article(number_in_group)
+    _, _, article_posted = conn.article(number_in_group)
     if article_posted is None:
         fail("article cannot be retrieved from group")
+
 
 def test_post_propagates(ident=None, description=b'posting propagation test'):
     """inntest.Tests.test_post_propagates([ident=IDENT][description=SUBJECT])
 
     Posts to the test newsgroup and verifies that the article
-    propagates to the test server.
+    propagates to the test server (which is really us with a funny hat on).
 
     If IDENT is specified then this value will be used as the
     message ID.
@@ -85,6 +91,7 @@ def test_post_propagates(ident=None, description=b'posting propagation test'):
     """
     _check_post_propagates(ident, description, test_post, features='peering')
 
+
 def _check_post_propagates(ident, description,
                            do_post, features=[], *args, **kwargs):
     """inntest.Tests._check_post_propagates(IDENT, DESCRIPTION, DO_POST, ...)
@@ -93,13 +100,13 @@ def _check_post_propagates(ident, description,
     a message and then verify it is fed back to us.
 
     """
-    ident=inntest.ident(ident)
+    ident = inntest.ident(ident)
     if features is None:
-        features='peering'
+        features = 'peering'
     with inntest.local_server(features=features) as s:
         do_post(*args, ident=ident, description=description, **kwargs)
-        next_trigger=0
-        limit=time.time()+inntest.timelimit
+        next_trigger = 0
+        limit = time.time()+inntest.timelimit
         while time.time() < limit:
             # See if the post has turned up
             with s.lock:
@@ -107,15 +114,16 @@ def _check_post_propagates(ident, description,
                     break
             # Repeat the trigger if it's not helping
             if (inntest.trigger is not None
-                   and next_trigger <= time.time()):
+                    and next_trigger <= time.time()):
                 log().debug("execute: %s" % inntest.trigger)
-                rc=os.system(inntest.trigger)
+                rc = os.system(inntest.trigger)
                 if rc != 0:
                     failhard("Trigger wait status: %#04x" % rc)
-                next_trigger=time.time()+inntest.trigger_timeout
+                next_trigger = time.time()+inntest.trigger_timeout
             time.sleep(0.5)
         if ident not in s.ihave_submitted:
             fail("article never propagated")
+
 
 def test_post_no_message_id():
     """inntest.Tests.test_no_message_id()
@@ -124,25 +132,26 @@ def test_post_no_message_id():
     verifies that the article appears.
 
     """
-    unique=inntest.unique()
-    article=[b'Newsgroups: ' + inntest.group,
-             b'From: ' + inntest.email,
-             b'Subject: [nntpbits] no message id (ignore)',
-             b'',
-             unique]
+    unique = inntest.unique()
+    article = [b'Newsgroups: ' + inntest.group,
+               b'From: ' + inntest.email,
+               b'Subject: [nntpbits] no message id (ignore)',
+               b'',
+               unique]
     with inntest.connection() as conn:
         conn.post(article)
-        count,low,high=conn.group(inntest.group)
-        found=False
-        for number in range(high,low-1,-1):
-            r_number,r_ident,r_body=conn.body(number)
-            if r_body==[unique]:
-                found=True
+        count, low, high = conn.group(inntest.group)
+        found = False
+        for number in range(high, low-1, -1):
+            r_number, r_ident, r_body = conn.body(number)
+            if r_body == [unique]:
+                found = True
                 break
         assert found
 
 # -------------------------------------------------------------------------
 # Testing IHAVE
+
 
 def test_ihave(ident=None, description=b"ihave test", _pathhost=None):
     """inntest.Tests.test_ihave([ident=IDENT][description=SUBJECT])
@@ -157,17 +166,18 @@ def test_ihave(ident=None, description=b"ihave test", _pathhost=None):
     line.
 
     """
-    ident=inntest.ident(ident)
+    ident = inntest.ident(ident)
     if _pathhost is None:
-        _pathhost=inntest.domain
-    article=[b'Path: ' + _pathhost + b'!not-for-mail',
-             b'Newsgroups: ' + inntest.group,
-             b'From: ' + inntest.email,
-             b'Subject: [nntpbits] ' + nntpbits._normalize(description) + b' (ignore)',
-             b'Message-ID: ' + ident,
-             b'Date: ' + inntest.newsdate(),
-             b'',
-             b'nntpbits.Test test posting']
+        _pathhost = inntest.domain
+    article = [b'Path: ' + _pathhost + b'!not-for-mail',
+               b'Newsgroups: ' + inntest.group,
+               b'From: ' + inntest.email,
+               b'Subject: [nntpbits] ' +
+               nntpbits._normalize(description) + b' (ignore)',
+               b'Message-ID: ' + ident,
+               b'Date: ' + inntest.newsdate(),
+               b'',
+               b'nntpbits.Test test posting']
     with inntest.connection() as conn:
         conn.ihave(article)
         try:
@@ -177,11 +187,12 @@ def test_ihave(ident=None, description=b"ihave test", _pathhost=None):
                 raise e
         _check_posted(conn, ident)
 
+
 def test_ihave_propagates(ident=None, description=b'ihave propagation test'):
     """inntest.Tests.test_ihave_propagates([ident=IDENT][description=SUBJECT])
 
     Feed a post to the test newsgroup and verifies that the article
-    propagates to the test server.
+    propagates to the test server (which is really us with a funny hat on).
 
     If IDENT is specified then this value will be used as the
     message ID.
@@ -192,11 +203,12 @@ def test_ihave_propagates(ident=None, description=b'ihave propagation test'):
     # Need a nondefault pathhost so it will propagate back to us
     _check_post_propagates(ident, description,
                            test_ihave,
-                           features='ihave', # prevent use of streaming
+                           features='ihave',  # prevent use of streaming
                            _pathhost=b'nonesuch.' + inntest.domain)
 
 # -----------------------------------------------------------------------------
 # Testing RFC4644 streaming commands
+
 
 def test_takethis(ident=None, description=b"takethis test", _pathhost=None):
     """inntest.Tests.test_takethis([ident=IDENT][description=SUBJECT])
@@ -211,33 +223,35 @@ def test_takethis(ident=None, description=b"takethis test", _pathhost=None):
     line.
 
     """
-    ident=inntest.ident(ident)
+    ident = inntest.ident(ident)
     if _pathhost is None:
-        _pathhost=inntest.domain
-    article=[b'Path: ' + _pathhost + b'!not-for-mail',
-             b'Newsgroups: ' + inntest.group,
-             b'From: ' + inntest.email,
-             b'Subject: [nntpbits] ' + nntpbits._normalize(description) + b' (ignore)',
-             b'Message-ID: ' + ident,
-             b'Date: ' + inntest.newsdate(),
-             b'',
-             b'nntpbits.Test test posting']
+        _pathhost = inntest.domain
+    article = [b'Path: ' + _pathhost + b'!not-for-mail',
+               b'Newsgroups: ' + inntest.group,
+               b'From: ' + inntest.email,
+               b'Subject: [nntpbits] ' +
+               nntpbits._normalize(description) + b' (ignore)',
+               b'Message-ID: ' + ident,
+               b'Date: ' + inntest.newsdate(),
+               b'',
+               b'nntpbits.Test test posting']
     with inntest.connection() as conn:
         if not conn.streaming():
             return skip("no streaming support")
-        r=conn.check(article=article)
+        r = conn.check(article=article)
         if r != True:
             fail("CHECK rejected article: %s" % r)
-        r=conn.takethis(article)
+        r = conn.takethis(article)
         if r != True:
             failhard("TAKETHIS rejected article: %s" % r)
-        r=conn.check(article=article)
+        r = conn.check(article=article)
         if r != False:
             fail("CHECK unexpectedly accepted article: %s" % r)
-        r=conn.takethis(article)
+        r = conn.takethis(article)
         if r != False:
             fail("TAKETHIS unexpectedly accepted article: %s" % r)
         _check_posted(conn, ident)
+
 
 def test_takethis_propagates(ident=None, description=b'takethis propagation test'):
     """inntest.Tests.test_takethis_propagates([ident=IDENT][description=SUBJECT])

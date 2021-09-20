@@ -18,5 +18,7 @@
 set -e
 . ${INNTEST_CONFIG:-./config}
 
-./test-innfeed
-./test-nntpsend
+status=0
+./test-innfeed || status=1
+./test-nntpsend || status=1
+exit $status

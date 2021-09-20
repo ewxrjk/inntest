@@ -234,12 +234,15 @@ class Connection(object):
         Disconnect from the peer.
 
         """
-        if self.r is not None:
-            self.r.close()
-        if self.w is not None:
-            self.w.close()
+        for f in [self.r, self.w, self.sock]:
+            if f is not None:
+                try:
+                    f.close()
+                except:
+                    pass
         self.r=None
         self.w=None
+        self.sock=None
 
     def parse(self, line):
         """p.parse(LINE) -> CODE,ARGUMENT

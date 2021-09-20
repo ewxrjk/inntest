@@ -14,13 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import inntest,nntpbits
-import base64,hashlib,os,re,struct,threading,time
+import inntest
+import nntpbits
+import base64
+import hashlib
+import os
+import re
+import struct
+import threading
+import time
 from inntest.running import *
 
-_seed=os.urandom(32)
-_sequence=0
-_lock=threading.Lock()
+_seed = os.urandom(32)
+_sequence = 0
+_lock = threading.Lock()
+
 
 def unique(alphabet=None):
     """inntest.unique() -> BYTES
@@ -35,25 +43,27 @@ def unique(alphabet=None):
     while True:
         with _lock:
             global _sequence
-            latest=_sequence
-            _sequence+=1
-        h=hashlib.sha256()
+            latest = _sequence
+            _sequence += 1
+        h = hashlib.sha256()
         h.update(_seed)
         h.update(struct.pack("<q", latest))
         # base64 is 3 bytes into 4 characters, so truncate to a
         # multiple of 3.
-        unique=base64.b64encode(h.digest()[:18])
-        suitable=True
+        unique = base64.b64encode(h.digest()[:18])
+        suitable = True
         if alphabet is not None:
             for u in unique:
                 if u not in alphabet:
-                    suitable=False
+                    suitable = False
                     break
         if suitable:
             return unique
 
+
 def groupname():
     return inntest.hierarchy+b'.'+unique(b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
 
 def ident(ident=None):
     """inntest.ident([IDENT]) -> IDENT
@@ -67,6 +77,7 @@ def ident(ident=None):
     else:
         return nntpbits._normalize(ident)
 
+
 def newsdate(when=None):
     """inntest.newsdate() -> BYTES
 
@@ -74,13 +85,15 @@ def newsdate(when=None):
     articles.
 
     """
-    if when==None:
-        when=time.time()
+    if when == None:
+        when = time.time()
     return bytes(time.strftime("%a, %d %b %Y %H:%M:%S +0000",
                                time.gmtime(when)),
                  'ascii')
 
-_trim_re=re.compile(b'(^[ \t]*|[ \t]*$)')
+
+_trim_re = re.compile(b'(^[ \t]*|[ \t]*$)')
+
 
 def trim(s):
     """inntest.trim(S) -> BYTES
@@ -93,15 +106,21 @@ def trim(s):
 # -------------------------------------------------------------------------
 # Local server support
 
+
+# Message ID pattern that will always be rejected
+_reject_mid_re = re.compile(b'<reject\.(\d+)(\..*)?@inntest\.invalid>')
+
+
 class TestServer(nntpbits.NewsServer):
     """inntest.TestServer() -> SERVER
 
     News server class that accepts all articles fed to it.
     """
+
     def __init__(self, conncls=nntpbits.ServerConnection):
         nntpbits.NewsServer.__init__(self, conncls=conncls)
-        self.ihave_checked=[]
-        self.ihave_submitted={}
+        self.ihave_checked = []
+        self.ihave_submitted = {}
 
     def __enter__(self):
         return self
@@ -113,16 +132,23 @@ class TestServer(nntpbits.NewsServer):
         return False
 
     def ihave_check(self, ident):
+        # Capture the list of message IDs we've seen
         with self.lock:
             self.ihave_checked.append(ident)
+        # Reject message IDs that match the rejection pattern
+        m = _reject_mid_re.match(ident)
+        if m:
+            return (int(m.group(1)), b'Rejected')
+        # Accept everything else
         return (335, b'OK')
 
     def ihave(self, ident, article):
         with self.lock:
             if ident in self.ihave_submitted:
                 return (435, b'Duplicate')
-            self.ihave_submitted[ident]=article
+            self.ihave_submitted[ident] = article
         return (235, b'OK')
+
 
 def local_server(features=[]):
     """inntest.local_server([FEATURES]) -> SERVER
@@ -131,7 +157,7 @@ def local_server(features=[]):
     address.  This is used by propagation tests.
 
     """
-    ls=TestServer()
+    ls = TestServer()
     ls.listen_address(inntest.localserveraddress[0],
                       inntest.localserveraddress[1],
                       wait=False,

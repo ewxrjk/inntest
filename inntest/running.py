@@ -15,15 +15,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import inntest
-import logging,traceback
+import logging
+import traceback
 
-_fails=[]
-_xfails=[]
-_compats=[]
-_skips=[]
-_testname=None
+_fails = []
+_xfails = []
+_compats = []
+_skips = []
+_testname = None
 
-_log=None
+_log = None
+
 
 def log(newlog=None):
     """log() -> LOGGER
@@ -34,22 +36,25 @@ def log(newlog=None):
     """
     global _log
     if newlog is not None:
-        _log=newlog
+        _log = newlog
     return _log
+
 
 class _Failed(Exception):
     pass
+
 
 def list_tests():
     """inntest.list_tests() -> LIST
 
     Returns a list of tests.
     """
-    tests=[]
+    tests = []
     for member in dir(inntest):
         if member[0:5] == 'test_':
             tests.append(member)
     return tests
+
 
 def run_test(test_name, *args, **kwargs):
     """inntest.run_test(NAME, ...) -> FAILS, XFAILS, COMPATS, SKIPS
@@ -58,14 +63,14 @@ def run_test(test_name, *args, **kwargs):
 
     """
     global _fails, _xfails, _compats, _skips, _testname
-    _fails=[]
-    _xfails=[]
-    _compats=[]
-    _skips=[]
-    _testname=test_name
+    _fails = []
+    _xfails = []
+    _compats = []
+    _skips = []
+    _testname = test_name
     if _log is None:
         log(logging.getLogger(__name__))
-    method=getattr(inntest, test_name, None)
+    method = getattr(inntest, test_name, None)
     if method is None:
         raise Exception("no such test as '%s'" % test_name)
     try:
@@ -77,7 +82,9 @@ def run_test(test_name, *args, **kwargs):
         _log.error("Test %s failed: %s" % (test_name, e))
         _log.error("%s" % traceback.format_exc())
         _fails.append(e)
+    _log.info("Completed test %s" % test_name)
     return (_fails, _xfails, _compats, _skips)
+
 
 def fail(description):
     """inntest.running.fail(DESCRIPTION)
@@ -88,6 +95,7 @@ def fail(description):
     """
     _log.warn("FAILURE: %s" % (description))
     _fails.append(description)
+
 
 def failhard(description):
     """inntest.running.failhard(DESCRIPTION)
@@ -104,6 +112,7 @@ def failhard(description):
     _fails.append(description)
     raise _Failed(description)
 
+
 def xfail(description):
     """inntest.running.xfail(DESCRIPTION)
 
@@ -114,6 +123,7 @@ def xfail(description):
     """
     _log.warn("EXPECTED FAILURE: %s" % (description))
     _xfails.append(description)
+
 
 def xfailhard(description):
     """inntest.running.xfailhard(DESCRIPTION)
@@ -130,6 +140,7 @@ def xfailhard(description):
     _xfails.append(description)
     raise _Failed(description)
 
+
 def compat(description):
     """inntest.running.compat(DESCRIPTION)
 
@@ -145,6 +156,7 @@ def compat(description):
     """
     _log.error("COMPATIBILITY: %s" % (description))
     _compats.append(description)
+
 
 def skip(description):
     """inntest.running.skip(DESCRIPTION)

@@ -89,12 +89,12 @@ def test_post_propagates(ident=None, description=b'posting propagation test'):
     If DESCRIPTION is specified then it will appear in the subject
     line.
     """
-    _check_post_propagates(ident, description, test_post, features='peering')
+    _check_post_propagation(ident, description, test_post, features='peering')
 
 
-def _check_post_propagates(ident, description,
-                           do_post, features=[], *args, **kwargs):
-    """inntest.Tests._check_post_propagates(IDENT, DESCRIPTION, DO_POST, ...)
+def _check_post_propagation(ident, description,
+                            do_post, features=[], behavior="accept", *args, **kwargs):
+    """inntest.Tests._check_post_propagation(IDENT, DESCRIPTION, DO_POST, ...)
 
     Call do_post(ident=IDENT, description=DESCRIPTION, ..) to post
     a message and then verify it is fed back to us.
@@ -108,7 +108,7 @@ def _check_post_propagates(ident, description,
         next_trigger = 0
         limit = time.time()+inntest.timelimit
         while time.time() < limit:
-            # See if the post has turned up
+            # If the post has been accepted, we're done.
             with s.lock:
                 if ident in s.ihave_submitted:
                     break
@@ -121,8 +121,17 @@ def _check_post_propagates(ident, description,
                     failhard("Trigger wait status: %#04x" % rc)
                 next_trigger = time.time()+inntest.trigger_timeout
             time.sleep(0.5)
-        if ident not in s.ihave_submitted:
+        ihave_checked = s.ihave_checked
+        ihave_submitted = s.ihave_submitted
+    if behavior == 'check':
+        if ident not in ihave_submitted:
             fail("article never propagated")
+    if behavior == 'reject':
+        count = ihave_checked.count(ident)
+        if count == 0:
+            fail("article never submitted")
+        if count > 1:
+            xfail("article submitted %d times" % count)
 
 
 def test_post_no_message_id():
@@ -201,10 +210,44 @@ def test_ihave_propagates(ident=None, description=b'ihave propagation test'):
     line.
     """
     # Need a nondefault pathhost so it will propagate back to us
-    _check_post_propagates(ident, description,
-                           test_ihave,
-                           features='ihave',  # prevent use of streaming
-                           _pathhost=b'nonesuch.' + inntest.domain)
+    _check_post_propagation(ident, description,
+                            test_ihave,
+                            features='ihave',  # prevent use of streaming
+                            _pathhost=b'nonesuch.' + inntest.domain)
+
+
+if False:
+    def test_ihave_propagation_error_500(description=b'propagation error handling test (500)'):
+        """inntest.Tests.test_propagation_errors([description=SUBJECT])
+
+        Verify that handling of IHAVE propagation errors is correct.
+
+        If DESCRIPTION is specified then it will appear in the subject
+        line in the test message.
+        """
+        # 500 is an unrecognized command; the most likely cause is that we're talking to
+        # a reader server. At any rate it's not very useful thing to test.
+        _check_post_propagation(b'<reject.500@inntest.invalid>', description,
+                                test_ihave,
+                                features='ihave',  # prevent use of streaming
+                                behavior='reject',
+                                _pathhost=b'nonesuch.' + inntest.domain)
+
+
+def test_ihave_propagation_error_501(description=b'propagation error handling test (501)'):
+    """inntest.Tests.test_propagation_errors([description=SUBJECT])
+
+    Verify that handling of IHAVE propagation errors is correct.
+
+    If DESCRIPTION is specified then it will appear in the subject
+    line in the test message.
+    """
+    # 501 is a syntax error; e.g. the peer disagrees about valid message ID syntax
+    _check_post_propagation(b'<reject.501@inntest.invalid>', description,
+                            test_ihave,
+                            features='ihave',  # prevent use of streaming
+                            behavior='reject',
+                            _pathhost=b'nonesuch.' + inntest.domain)
 
 # -----------------------------------------------------------------------------
 # Testing RFC4644 streaming commands
@@ -266,7 +309,7 @@ def test_takethis_propagates(ident=None, description=b'takethis propagation test
     line.
     """
     # Need a nondefault pathhost so it will propagate back to us
-    _check_post_propagates(ident, description,
-                           test_takethis,
-                           features='peering',
-                           _pathhost=b'nonesuch.' + inntest.domain)
+    _check_post_propagation(ident, description,
+                            test_takethis,
+                            features='peering',
+                            _pathhost=b'nonesuch.' + inntest.domain)

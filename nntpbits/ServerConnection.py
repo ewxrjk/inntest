@@ -15,15 +15,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import nntpbits
-import logging,re,socket,threading
+import logging
+import re
+import socket
+import threading
 
 # Regexp matching a command
-_command_re=re.compile(b"^(\S+)\s*(.*)$")
+_command_re = re.compile(b"^(\S+)\s*(.*)$")
 # Regexp matching a message ID
-_message_id_re=re.compile(b'^<[^@]+@[^@]+>$')
+_message_id_re = re.compile(b'^<[^@]+@[^@]+>$')
 
 # Text for standard response codes
-_responses={
+_responses = {
     100: 'Help text follows',
     101: 'Capabilities follow',
     200: 'Posting allowed',
@@ -67,6 +70,7 @@ _responses={
     504: 'Invalid base64',
 }
 
+
 class ServerConnection(nntpbits.Connection):
     """NNTP server endpoint
 
@@ -91,18 +95,19 @@ class ServerConnection(nntpbits.Connection):
     enable_streaming() -- enable RFC4644 fast peering commands
 
     """
+
     def __init__(self, server, stoppable=True):
         nntpbits.Connection.__init__(self, stoppable=stoppable)
         self._reset()
-        self.server=server
-        self.commands={
+        self.server = server
+        self.commands = {
             b'CAPABILITIES': self.capabilities,
             b'MODE': self.mode,
             b'QUIT': self.quit,
         }
-        self.capabilities=[b"VERSION 2",
-                           b"IMPLEMENTATION inntest"]
-        self.log=logging.getLogger(__name__)
+        self.capabilities = [b"VERSION 2",
+                             b"IMPLEMENTATION inntest"]
+        self.log = logging.getLogger(__name__)
 
     def enable_ihave(self, state=True):
         """s.enable_ihave([STATE])
@@ -110,8 +115,8 @@ class ServerConnection(nntpbits.Connection):
         Enables (or disables if STATE=False) the IHAVE command.
 
         """
-        if state==True:
-            self.commands[b'IHAVE']=self.ihave
+        if state == True:
+            self.commands[b'IHAVE'] = self.ihave
         else:
             self.commands.pop(b'IHAVE')
 
@@ -122,9 +127,9 @@ class ServerConnection(nntpbits.Connection):
         commands.
 
         """
-        if state==True:
-            self.commands[b'CHECK']=self.check
-            self.commands[b'TAKETHIS']=self.takethis
+        if state == True:
+            self.commands[b'CHECK'] = self.check
+            self.commands[b'TAKETHIS'] = self.takethis
         else:
             self.commands.pop(b'CHECK')
             self.commands.pop(b'TAKETHIS')
@@ -142,11 +147,11 @@ class ServerConnection(nntpbits.Connection):
             for item in feature:
                 self.enable(item, state)
         else:
-            if feature.lower()=='ihave':
+            if feature.lower() == 'ihave':
                 self.enable_ihave(state)
-            elif feature.lower()=='streaming':
+            elif feature.lower() == 'streaming':
                 self.enable_streaming(state)
-            elif feature.lower()=='peering':
+            elif feature.lower() == 'peering':
                 self.enable_ihave(state)
                 self.enable_streaming(state)
             else:
@@ -158,7 +163,7 @@ class ServerConnection(nntpbits.Connection):
         Reset object state.
 
         """
-        self.finished=False
+        self.finished = False
 
     def connected(self):
         """s.connected()
@@ -168,14 +173,20 @@ class ServerConnection(nntpbits.Connection):
         disconnects or sends the QUIT command.
 
         """
-        self.respond(200)
-        r=self.receive_line()
-        while r is not None:
-            self.command(r)
-            if self.finished:
-                break
-            r=self.receive_line()
-        self.disconnect()
+        try:
+            self.respond(200)
+            r = self.receive_line()
+            while r is not None:
+                self.command(r)
+                if self.finished:
+                    break
+                r = self.receive_line()
+        except BrokenPipeError:
+            pass
+        except ConnectionResetError:
+            pass
+        finally:
+            self.disconnect()
 
     def register(self, command, callback):
         """s.register(COMMAND, CALLBACK)
@@ -189,7 +200,7 @@ class ServerConnection(nntpbits.Connection):
         overriding them as subclass methods.)
 
         """
-        self.commands[nntpbits._normalize(command).upper()]=callback
+        self.commands[nntpbits._normalize(command).upper()] = callback
 
     def respond(self, response, description=None, log_type=None, flush=True,
                 detail=""):
@@ -199,16 +210,16 @@ class ServerConnection(nntpbits.Connection):
 
         """
         if log_type is None and response >= 500:
-            log_type='error'
+            log_type = 'error'
         if description is None:
             if response in _responses:
-                description=_responses[response]
+                description = _responses[response]
             else:
-                description="Derp"
+                description = "Derp"
         if isinstance(description, bytes):
-            description=str(description, 'ascii')
+            description = str(description, 'ascii')
         if log_type is not None:
-            method=getattr(self.log, log_type)
+            method = getattr(self.log, log_type)
             method("%x: %s %s"
                    % (threading.get_ident(), description, detail))
         self.send_line("%d %s" % (response, description), flush=flush)
@@ -224,11 +235,11 @@ class ServerConnection(nntpbits.Connection):
         bytes object.
 
         """
-        m=_command_re.match(cmd)
+        m = _command_re.match(cmd)
         if not m:
             return self.respond(500, "Malformed command")
-        command=m.group(1).upper()
-        arguments=m.group(2)
+        command = m.group(1).upper()
+        arguments = m.group(2)
         if command not in self.commands:
             return self.respond(500, detail=command)
         self.commands[command](arguments)
@@ -241,11 +252,11 @@ class ServerConnection(nntpbits.Connection):
         """
         if not _message_id_re.match(arguments):
             return self.respond(501)
-        (rc,argument)=self.server.ihave_check(arguments)
-        self.respond(rc,argument)
-        if rc==335:
-            article=self.receive_lines()
-            (rc,argument)=self.server.ihave(arguments, article)
+        (rc, argument) = self.server.ihave_check(arguments)
+        self.respond(rc, argument)
+        if rc == 335:
+            article = self.receive_lines()
+            (rc, argument) = self.server.ihave(arguments, article)
             self.respond(rc, argument)
 
     def check(self, arguments):
@@ -256,12 +267,12 @@ class ServerConnection(nntpbits.Connection):
         """
         if not _message_id_re.match(arguments):
             return self.respond(501)
-        (rc,argument)=self.server.ihave_check(arguments)
-        if rc==335:
+        (rc, argument) = self.server.ihave_check(arguments)
+        if rc == 335:
             return self.respond(238, arguments)
-        elif rc==435:
+        elif rc == 435:
             return self.respond(431, arguments)
-        elif rc==436:
+        elif rc == 436:
             return self.respond(438, arguments)
         return self.respond(rc, argument)
 
@@ -273,32 +284,32 @@ class ServerConnection(nntpbits.Connection):
         """
         if not _message_id_re.match(arguments):
             return self.respond(501)
-        article=self.receive_lines()
-        (rc,argument)=self.server.ihave_check(arguments)
-        if rc==335:
-            (rc,argument)=self.server.ihave(arguments, article)
-            if rc==235:
+        article = self.receive_lines()
+        (rc, argument) = self.server.ihave_check(arguments)
+        if rc == 335:
+            (rc, argument) = self.server.ihave(arguments, article)
+            if rc == 235:
                 return self.respond(239, arguments)
-            if rc==437:
+            if rc == 437:
                 return self.respond(439, arguments)
-        elif rc==435:
+        elif rc == 435:
             return self.respond(439, arguments)
-        if rc==436:
+        if rc == 436:
             self.respond(400)
-            self.finished=True
+            self.finished = True
         return self.respond(rc, argument)
 
-    _mode_re=re.compile(b'^\\s*(\\S*)\s*$')
+    _mode_re = re.compile(b'^\\s*(\\S*)\s*$')
 
     def mode(self, arguments):
         """s.mode(ARGUMENTS)
 
         Implementation of NNTP MODE command."""
-        m=ServerConnection._mode_re.match(arguments)
+        m = ServerConnection._mode_re.match(arguments)
         if not m:
             return self.respond(501)
-        mode=m.group(1).upper()
-        if mode==b'STREAM' and b'TAKETHIS' in self.commands:
+        mode = m.group(1).upper()
+        if mode == b'STREAM' and b'TAKETHIS' in self.commands:
             return self.respond(203)
         return self.respond(501, 'Unrecognized/unsupported mode')
 
@@ -308,7 +319,7 @@ class ServerConnection(nntpbits.Connection):
         Implementation of the NNTP CAPABILITIES command.
 
         """
-        capabilities=list(self.capabilities)
+        capabilities = list(self.capabilities)
         for cmd in [b'IHAVE', b'POST', b'NEWNEWS', b'OVER', b'HDR', b'LIST']:
             if cmd in self.commands:
                 capabilities.append(cmd)
@@ -324,4 +335,4 @@ class ServerConnection(nntpbits.Connection):
 
         """
         self.respond(205)
-        self.finished=True
+        self.finished = True

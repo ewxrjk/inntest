@@ -14,9 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import inntest,nntpbits
+import inntest
+import nntpbits
 import time
 from inntest.running import *
+
 
 def test_errors_bad_post():
     """inntest.Tests.test_errors_bad_post()
@@ -28,6 +30,7 @@ def test_errors_bad_post():
         conn._require_reader()
         return _test_errors_bad_post(conn, b'POST', 340, 240, 441, [])
 
+
 def test_errors_bad_ihave():
     """inntest.Tests.test_errors_bad_ihave()
 
@@ -37,6 +40,7 @@ def test_errors_bad_ihave():
     with inntest.connection() as conn:
         return _test_errors_bad_post(conn, b'IHAVE', 335, 235, 437,
                                      [b'Path: '+inntest.domain])
+
 
 def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
                           error_response, extras):
@@ -50,29 +54,29 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
               error_response=error_response, add_body=True,
               expected_fail=False, compatibility=False, extras=extras):
         if ident is None:
-            ident=inntest.ident()
-            article=[b'Message-ID: '+ident]+article
-        article=extras+article
+            ident = inntest.ident()
+            article = [b'Message-ID: '+ident]+article
+        article = extras+article
         if add_body:
-            article=article+[b'', inntest.unique()]
-        if cmd!=b'POST':
-            cmd_list=[cmd,ident]
+            article = article+[b'', inntest.unique()]
+        if cmd != b'POST':
+            cmd_list = [cmd, ident]
         else:
-            cmd_list=cmd
-        code,arg=conn.transact(cmd_list)
-        if code==initial_response:
+            cmd_list = cmd
+        code, arg = conn.transact(cmd_list)
+        if code == initial_response:
             conn.send_lines(article)
-            code,arg=conn.wait()
-        if code!=error_response:
-            reporter=fail
-            if compatibility and code==ok_response:
-                reporter=compat
+            code, arg = conn.wait()
+        if code != error_response:
+            reporter = fail
+            if compatibility and code == ok_response:
+                reporter = compat
             if expected_fail:
-                reporter=xfail
+                reporter = xfail
             reporter("%s: %s: expected %d got %s"
                      % (str(cmd, 'ascii'), what, error_response,
                         str(conn.response, 'ascii')))
-    ## Missing things
+    # Missing things
     check('no subject',
           [b'Newsgroups: ' + inntest.group,
            b'From: ' + inntest.email,
@@ -85,7 +89,7 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
           [b'From: ' + inntest.email,
            b'Subject: [nntpbits] no groups test (ignore)',
            b'Date: ' + inntest.newsdate()])
-    if cmd==b'IHAVE':
+    if cmd == b'IHAVE':
         check('missing date',
               [b'Newsgroups: ' + inntest.group,
                b'From: ' + inntest.email,
@@ -102,7 +106,7 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
            b'Subject: [nntpbits] missing body test (ignore)',
            b'Date: ' + inntest.newsdate()],
           add_body=False)
-    ## Malformed things
+    # Malformed things
     check('empty newsgroups',
           [b'Newsgroups: ',
            b'From: ' + inntest.email,
@@ -113,13 +117,16 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
     # However, INN's behavior is long-standing and is done for compatibility
     # with clients that expect this behavior (tin).  Essentially, the
     # specification is wrong.
+    #
+    # https://www.rfc-editor.org/errata/eid4468 proposes a change to the
+    # spec to bless nnrpd's cleanup.
     check('empty followup-to',
           [b'Newsgroups: ' + inntest.group,
            b'From: ' + inntest.email,
            b'Subject: [nntpbits] empty followup test (ignore)',
            b'Followup-To:',
            b'Date: ' + inntest.newsdate()],
-          compatibility=(cmd==b'POST'))
+          compatibility=(cmd == b'POST'))
     check('empty from',
           [b'Newsgroups: ' + inntest.group,
            b'From: ',
@@ -132,7 +139,7 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
            b'From: example',
            b'Subject: [nntpbits] malformed from test (ignore)',
            b'Date: ' + inntest.newsdate()],
-          compatibility=(cmd==b'IHAVE'))
+          compatibility=(cmd == b'IHAVE'))
     # INN's nnrpd doens't full check the From: syntax.  This has been reported
     # and may be fixed in a future version, at which point the test is likely
     # to be tightened up.
@@ -141,8 +148,8 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
            b'From: @example.com',
            b'Subject: [nntpbits] malformed from test #2 (ignore)',
            b'Date: ' + inntest.newsdate()],
-          expected_fail=(cmd==b'POST'),
-          compatibility=(cmd==b'IHAVE'))
+          expected_fail=(cmd == b'POST'),
+          compatibility=(cmd == b'IHAVE'))
     check('forbidden newsgroup',
           [b'Newsgroups: poster',
            b'From: ' + inntest.email,
@@ -165,7 +172,7 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
            b'Subject: [nntpbits] malformed expires date test (ignore)',
            b'Date: ' + inntest.newsdate(),
            b'Expires: your sister'],
-          compatibility=(cmd==b'IHAVE'))
+          compatibility=(cmd == b'IHAVE'))
     for ident in [b'junk', b'<junk>', b'<junk@junk']:
         check('malformed message-id (%s)' % ident,
               [b'Newsgroups: '+inntest.group,
@@ -174,7 +181,7 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
                b'Date: ' + inntest.newsdate(),
                b'Message-ID: ' + ident],
               inntest.ident())
-        if cmd==b'IHAVE':
+        if cmd == b'IHAVE':
             check('malformed message-id (%s)' % ident,
                   [b'Newsgroups: '+inntest.group,
                    b'From: ' + inntest.email,
@@ -190,15 +197,15 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
            b'Date: ' + inntest.newsdate(),
            b''],
           add_body=False,
-          compatibility=(cmd==b'IHAVE'))
-    ## Duplicate things
+          compatibility=(cmd == b'IHAVE'))
+    # Duplicate things
     check('duplicate header',
           [b'Newsgroups: ' + inntest.group,
            b'Newsgroups: ' + inntest.group,
            b'From: ' + inntest.email,
            b'Subject: [nntpbits] duplicate header test (ignore)',
            b'Date: ' + inntest.newsdate()])
-    ## Semantic checks
+    # Semantic checks
     check('past article',
           [b'Newsgroups: ' + inntest.group,
            b'From: ' + inntest.email,
@@ -226,7 +233,7 @@ def _test_errors_bad_post(conn, cmd, initial_response, ok_response,
            b'From: ' + inntest.email,
            b'Subject: [nntpbits] nonexistent group test (ignore)',
            b'Date: ' + inntest.newsdate()])
-    if cmd==b'POST':
+    if cmd == b'POST':
         check('followup to nonexistent newsgroup',
               [b'Newsgroups: ' + inntest.group,
                b'Followup-To: ' + inntest.groupname(),

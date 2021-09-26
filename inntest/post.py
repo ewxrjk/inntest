@@ -212,7 +212,7 @@ def test_ihave_propagates(ident=None, description=b'ihave propagation test'):
     # Need a nondefault pathhost so it will propagate back to us
     _check_post_propagation(ident, description,
                             test_ihave,
-                            features='ihave',  # prevent use of streaming
+                            features=['ihave'],  # prevent use of streaming
                             _pathhost=b'nonesuch.' + inntest.domain)
 
 
@@ -229,13 +229,13 @@ if False:
         # a reader server. At any rate it's not very useful thing to test.
         _check_post_propagation(b'<reject.500@inntest.invalid>', description,
                                 test_ihave,
-                                features='ihave',  # prevent use of streaming
+                                features=['ihave'],  # prevent use of streaming
                                 behavior='reject',
                                 _pathhost=b'nonesuch.' + inntest.domain)
 
 
-def test_ihave_propagation_error_501(description=b'propagation error handling test (501)'):
-    """inntest.Tests.test_propagation_errors([description=SUBJECT])
+def test_propagation_error_501(description=b'propagation error handling test (501)'):
+    """inntest.Tests.test_propagation_error_501([description=SUBJECT])
 
     Verify that handling of IHAVE propagation errors is correct.
 
@@ -243,9 +243,25 @@ def test_ihave_propagation_error_501(description=b'propagation error handling te
     line in the test message.
     """
     # 501 is a syntax error; e.g. the peer disagrees about valid message ID syntax
-    _check_post_propagation(b'<reject.501@inntest.invalid>', description,
+    _check_post_propagation(b'<reject.501.ihave@inntest.invalid>', description,
                             test_ihave,
-                            features='ihave',  # prevent use of streaming
+                            features=['ihave'],  # prevent use of streaming
+                            behavior='reject',
+                            _pathhost=b'nonesuch.' + inntest.domain)
+
+
+def test_streaming_propagation_error_501(description=b'propagation error handling test (501)'):
+    """inntest.Tests.test_streaming_propagation_error_501([description=SUBJECT])
+
+    Verify that handling of CHECK propagation errors is correct.
+
+    If DESCRIPTION is specified then it will appear in the subject
+    line in the test message.
+    """
+    # 501 is a syntax error; e.g. the peer disagrees about valid message ID syntax
+    _check_post_propagation(b'<reject.501.check@inntest.invalid>', description,
+                            test_ihave,
+                            features=['streaming'],  # prevent use of streaming
                             behavior='reject',
                             _pathhost=b'nonesuch.' + inntest.domain)
 
@@ -311,5 +327,5 @@ def test_takethis_propagates(ident=None, description=b'takethis propagation test
     # Need a nondefault pathhost so it will propagate back to us
     _check_post_propagation(ident, description,
                             test_takethis,
-                            features='peering',
+                            features=['peering'],
                             _pathhost=b'nonesuch.' + inntest.domain)
